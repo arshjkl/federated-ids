@@ -1,0 +1,154 @@
+{
+  "project": "federated-ids",
+  "audit_date": "2026-11-12",
+  "scope": ["src/", "models/", "data/", "dashboard/backend/", "project documentation"],
+  "out_of_scope": ["src/ids_laya/", "dashboard/frontend/"],
+  "overall_completion_percent": 54,
+  "weights": {
+    "dataset_preprocessing": 15,
+    "centralized_ml": 15,
+    "federated_learning": 25,
+    "differential_privacy": 15,
+    "evaluation_testing": 15,
+    "documentation_reproducibility": 10,
+    "dashboard_readiness": 5
+  },
+  "component_scores": {
+    "dataset_preprocessing": {
+      "score": 90,
+      "weighted_points": 13.5,
+      "status": "implemented_and_verified",
+      "details": "Full preprocessing pipeline implemented and ran; scaler fit on train only (no leakage); stratified split test_size=0.2 random_state=42; artifacts saved (scaler.pkl, feature_names.json, label_mapping.json, constant_features.json); processed arrays saved (X_train 2,017,889x70, X_test 504,473x70). Raw data untracked in git; no validation scripts or dataset manifest."
+    },
+    "centralized_ml": {
+      "score": 90,
+      "weighted_points": 13.5,
+      "status": "implemented_and_verified",
+      "details": "MLPIDS fixed (nn.Module inheritance at src/models/mlp.py:38); architecture 128-64-32, dropout 0.3, batchnorm; trained 20 epochs batch_size=256 Adam lr=0.001 BCEWithLogitsLoss. Model + results JSON saved. Metrics verified from JSON: accuracy 0.9771, precision 0.9616, recall 0.9001, f1 0.9298, roc_auc 0.9981, fpr 0.0073, fnr 0.0999. CPU-only; no hyperparameter tuning, no cross-validation, no early stopping."
+    },
+    "federated_learning": {
+      "score": 80,
+      "weighted_points": 20.0,
+      "status": "implemented_and_verified_partial",
+      "details": "Manual FedAvg (no Ray/Flower) ran 50 rounds to completion; 5 clients, non-IID Dirichlet alpha=0.5, local_epochs=5, batch_size=128, lr=0.001, warm start from centralized_mlp.pth, weighted aggregation by sample count, checkpoints every 10 rounds. Final model + results JSON saved. Metrics verified from JSON: accuracy 0.9587, precision 0.8818, recall 0.8721, f1 0.8770, fpr 0.0237, fnr 0.1279. Flower server/client and Ray path not executed (sandbox port binding blocked). Final federated metrics omit ROC-AUC."
+    },
+    "differential_privacy": {
+      "score": 0,
+      "weighted_points": 0.0,
+      "status": "not_implemented",
+      "details": "src/privacy/ directory empty. No DP-SGD, gradient clipping/noise, epsilon/delta accounting, or secure aggregation. PROJECT_SYNOPSIS.md claim that DP/secure aggregation were implemented is false."
+    },
+    "evaluation_testing": {
+      "score": 10,
+      "weighted_points": 1.5,
+      "status": "not_implemented",
+      "details": "src/evaluation/ directory empty. No unit tests, integration tests, or test harness. Model evidence exists only as persisted results JSONs, not executable tests. No independent validation harness or threshold-sensitivity analysis."
+    },
+    "documentation_reproducibility": {
+      "score": 35,
+      "weighted_points": 3.5,
+      "status": "partial_false_claims",
+      "details": "Code carries docstrings; PROJECT_SYNOPSIS.md and results JSONs/checkpoints exist. But PROJECT_SYNOPSIS.md contains false claims (Random Forest/XGBoost trained; differential privacy implemented) and cites the 5-round test (80% acc) instead of the completed 50-round run (95.9%). No root README, no run/reproduce instructions, no experiment-config documentation. dashboard/backend/requirements.txt omits torch and flwr."
+    },
+    "dashboard_readiness": {
+      "score": 40,
+      "weighted_points": 2.0,
+      "status": "code_exists_unverified",
+      "details": "Not touched per instruction (reviewed only). FastAPI backend (dashboard/backend/main.py) with /api/health, /api/system-status, /api/model-metrics, /api/analyze, /api/demo-events; integrates preprocessor, MLP model, Laya engine, evidence builder. requirements.txt missing torch and flwr; not verified running (sandbox blocks port 8000)."
+    }
+  },
+  "weighted_points_total": 54.0,
+  "weighted_points_max": 100.0,
+  "model_metrics": {
+    "centralized_mlp": {
+      "source": "models/centralized_mlp_results.json",
+      "accuracy": 0.9770631926782999,
+      "precision": 0.9616296426376328,
+      "recall": 0.9000657462195923,
+      "f1": 0.9298297745892941,
+      "roc_auc": 0.9980757604417655,
+      "fpr": 0.007295544685509317,
+      "fnr": 0.09993425378040763,
+      "confusion_matrix": [[416238, 3059], [8512, 76664]],
+      "training_time_seconds": 219.54,
+      "epochs": 20,
+      "batch_size": 256,
+      "verified": true
+    },
+    "federated_mlp_manual_50_rounds": {
+      "source": "models/manual_federated_improved_results.json",
+      "accuracy": 0.9586796760559082,
+      "precision": 0.8818362041334774,
+      "recall": 0.8721353432891894,
+      "f1": 0.8769589469645546,
+      "roc_auc": null,
+      "fpr": 0.023739735795867845,
+      "fnr": 0.12786465671081057,
+      "confusion_matrix": [[409343, 9954], [10891, 74285]],
+      "tp": 74285,
+      "tn": 409343,
+      "fp": 9954,
+      "fn": 10891,
+      "num_clients": 5,
+      "num_rounds": 50,
+      "partition_strategy": "non_iid_dirichlet",
+      "dirichlet_alpha": 0.5,
+      "local_epochs": 5,
+      "batch_size": 128,
+      "learning_rate": 0.001,
+      "warm_start": true,
+      "device": "cpu",
+      "verified": true
+    },
+    "federated_5_round_test_small_subset": {
+      "source": "models/manual_federated_results.json",
+      "accuracy": 0.8,
+      "precision": 0.75,
+      "recall": 0.8,
+      "f1": 0.77,
+      "roc_auc": 0.85,
+      "fpr": 0.1,
+      "fnr": 0.15,
+      "num_clients": 5,
+      "num_rounds": 5,
+      "verified": true,
+      "note": "Small test subset; cited in PROJECT_SYNOPSIS.md but not representative of the full 50-round run"
+    }
+  },
+  "verified_functionality": [
+    "CIC-IDS2017 CSV loading, cleaning, binary label conversion (BENIGN=0, ATTACK=1)",
+    "StandardScaler fit on training data only (no data leakage); stratified train/test split",
+    "Centralized MLP training (20 epochs) with persisted model and metrics JSON",
+    "Manual FedAvg federated training (50 rounds, 5 clients) with persisted model, metrics JSON, per-round history, per-client metrics, and checkpoints",
+    "MLPIDS nn.Module compatibility fix applied (src/models/mlp.py:38)",
+    "Dashboard backend integrates preprocessor, MLP model, Laya engine, evidence builder (code present, not executed)"
+  ],
+  "assumptions_unverified": [
+    "Class balance / per-class label distributions not independently recomputed",
+    "Flower server.py / client.py not executed (sandbox port binding blocked)",
+    "Ray+Flower run_federated_improved.py not executed",
+    "Dashboard backend not run (sandbox blocks port 8000)",
+    "Raw data integrity not independently validated"
+  ],
+  "gaps": [
+    "src/privacy/ empty — no differential privacy or secure aggregation",
+    "src/evaluation/ empty — no tests or evaluation harness",
+    "No ROC-AUC in federated evaluation metrics",
+    "CPU-only training; no CUDA/GPU support",
+    "No hyperparameter tuning, cross-validation, or early stopping",
+    "No root README; no run/reproduce instructions",
+    "dashboard/backend/requirements.txt missing torch and flwr"
+  ],
+  "false_claims_in_documentation": [
+    "PROJECT_SYNOPSIS.md: 'Training of Random Forest and XGBoost models across federated nodes' — no RF/XGB code exists",
+    "PROJECT_SYNOPSIS.md: 'Implementation of privacy-preserving techniques (differential privacy, secure aggregation)' — src/privacy/ is empty",
+    "PROJECT_SYNOPSIS.md: reports federated results from the 5-round test (80% acc) rather than the completed 50-round manual run (95.9%)"
+  ],
+  "recommendations": [
+    "Implement differential privacy in src/privacy/ (DP-SGD, gradient clipping + Gaussian noise, epsilon/delta accounting)",
+    "Build an evaluation/test suite in src/evaluation/ (unit tests for preprocessing, model forward, FedAvg aggregation)",
+    "Correct PROJECT_SYNOPSIS.md — remove RF/XGBoost and DP claims; report actual 50-round manual federated result",
+    "Add torch and flwr to dashboard/backend/requirements.txt; add a root README.md with run/reproduce instructions",
+    "Add ROC-AUC to federated evaluation; consider GPU/CUDA support and hyperparameter tuning"
+  ]
+}

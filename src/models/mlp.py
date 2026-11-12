@@ -35,7 +35,7 @@ except ImportError:
             return 1 / (1 + np.exp(-x))
 
 
-class MLPIDS:
+class MLPIDS(nn.Module):
     """
     Multi-Layer Perceptron for Intrusion Detection System.
     Binary classification: BENIGN (0) vs ATTACK (1).
