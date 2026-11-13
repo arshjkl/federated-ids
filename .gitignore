@@ -19,6 +19,7 @@ data/processed/
 # Excluded from push per scope
 dashboard/
 src/ids_laya/
+models/laya-checkpoint/
 
 # Frontend build / dependencies
 node_modules/
