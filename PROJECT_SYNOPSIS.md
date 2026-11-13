@@ -1,7 +1,7 @@
 # Project Synopsis: Federated Learning IDS
 
 **Project:** Privacy-Preserving Federated Intrusion Detection System (IDS)  
-**Dataset:** CIC-IDS2017  
+**Dataset:** CIC-IDS2017  https://cicresearch.ca/CICDataset/CIC-IDS-2017/browse.php?p=CIC-IDS-2017%2FCSVs
 **Last updated:** November 13, 2026  
 **Scope:** Federated ML pipeline only — no Laya, no dashboard  
 
