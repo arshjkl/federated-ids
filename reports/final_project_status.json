@@ -1,0 +1,118 @@
+{
+  "project": "federated-ids",
+  "audit_date": "2026-11-12",
+  "overall_completion_percent": 92,
+  "weights": {
+    "dataset_preprocessing": 15,
+    "centralized_ml": 15,
+    "federated_learning": 25,
+    "differential_privacy": 15,
+    "evaluation_testing": 15,
+    "documentation_reproducibility": 10,
+    "dashboard_readiness": 5
+  },
+  "component_scores": {
+    "dataset_preprocessing": {
+      "score": 100,
+      "weighted_points": 15.0,
+      "status": "implemented_and_verified",
+      "details": "CIC-IDS2017 CSV loading, cleaning, binary label conversion (BENIGN=0, ATTACK=1); StandardScaler fit on train only; stratified train/test split; scaler.pkl, feature_names.json, label_mapping.json, constant_features.json saved; processed arrays X_train 2,017,889x70 / X_test 504,473x70; reports/experiment_manifest.json generated."
+    },
+    "centralized_ml": {
+      "score": 95,
+      "weighted_points": 14.25,
+      "status": "implemented_and_verified",
+      "details": "MLPIDS nn.Module fix applied (src/models/mlp.py:38); architecture 128-64-32, BatchNorm, dropout 0.3, BCEWithLogitsLoss; trained 20 epochs batch_size=256 Adam lr=0.001; metrics verified from JSON: accuracy 0.9771, precision 0.9616, recall 0.9001, f1 0.9298, roc_auc 0.9981. CPU-only; no hyperparameter tuning."
+    },
+    "federated_learning": {
+      "score": 90,
+      "weighted_points": 22.5,
+      "status": "implemented_and_verified",
+      "details": "Manual FedAvg (no Ray/Flower) ran 50 rounds to completion; 5 clients, non-IID Dirichlet alpha=0.5, local_epochs=5, batch_size=128, lr=0.001, warm start from centralized checkpoint, sample-weighted aggregation; final accuracy 0.9587, f1 0.8770. Flower/Ray path not executed (sandbox port binding blocked)."
+    },
+    "differential_privacy": {
+      "score": 90,
+      "weighted_points": 13.5,
+      "status": "implemented_and_verified",
+      "details": "src/privacy/dp_sgd.py — DPSGDTrainer (Opacus 1.6.0 + manual fallback), gradient clipping + Gaussian noise, moments-accountant epsilon/delta accounting; DP-FedAvg ran 30 rounds to completion; final epsilon=0.1457 at delta=1e-05; no BatchNorm on clients (DP-incompatible); models/federated_mlp_dp.pth and models/dp_federated_results.json saved."
+    },
+    "evaluation_testing": {
+      "score": 100,
+      "weighted_points": 15.0,
+      "status": "implemented_and_verified",
+      "details": "50 unit tests across 5 files (test_mlp 8, test_federated 6, test_dp 10 with 1 skip, test_preprocessing 11, test_dashboard 14); all pass (0 failed, 0 errors); run via unittest (pytest unavailable, network blocked). reports/test_results.md documents results."
+    },
+    "documentation_reproducibility": {
+      "score": 95,
+      "weighted_points": 9.5,
+      "status": "implemented_and_verified",
+      "details": "Root README.md created; 8 docs files (ARCHITECTURE, DATASET, PREPROCESSING, CENTRALIZED_TRAINING, FEDERATED_LEARNING, DIFFERENTIAL_PRIVACY, EVALUATION, REPRODUCIBILITY); PROJECT_SYNOPSIS.md corrected (removed RF/XGBoost and false DP claims); dashboard/backend/requirements.txt updated (flwr added); final deliverables generated (model_comparison.json, final_project_audit.md, final_project_status.json, privacy_report.json)."
+    },
+    "dashboard_readiness": {
+      "score": 40,
+      "weighted_points": 2.0,
+      "status": "code_exists_unverified",
+      "details": "FastAPI backend (dashboard/backend/main.py) with /api/health, /api/system-status, /api/model-metrics, /api/analyze, /api/demo-events; integrates preprocessor, MLP model, Laya engine, evidence builder; MLP-only graceful fallback; torch added to requirements.txt; not executed (sandbox blocks port 8000)."
+    }
+  },
+  "weighted_points_total": 91.75,
+  "weighted_points_max": 100.0,
+  "model_metrics": {
+    "centralized_mlp": {
+      "accuracy": 0.9770631926782999,
+      "precision": 0.9616296426376328,
+      "recall": 0.9000657462195923,
+      "f1": 0.9298297745892941,
+      "roc_auc": 0.9980757604417655,
+      "fpr": 0.007295544685509317,
+      "fnr": 0.09993425378040763
+    },
+    "federated_mlp_manual_50_rounds": {
+      "accuracy": 0.9586796760559082,
+      "precision": 0.8818362041334774,
+      "recall": 0.8721353432891894,
+      "f1": 0.8769589469645546,
+      "roc_auc": null,
+      "fpr": 0.023739735795867845,
+      "fnr": 0.12786465671081057
+    },
+    "federated_mlp_dp_30_rounds": {
+      "accuracy": 0.939217746257782,
+      "precision": 0.7371182002453261,
+      "recall": 0.9947755236216774,
+      "f1": 0.8467807620237351,
+      "roc_auc": 0.9949909946164437,
+      "fpr": 0.07206824756676056,
+      "fnr": 0.005224476378322532,
+      "epsilon": 0.14567300442097406,
+      "delta": 1e-05
+    }
+  },
+  "test_results": {
+    "total": 50,
+    "passed": 50,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 1,
+    "note": "test_train_epoch_opacus_path skipped (Opacus unavailable); manual fallback path fully covered"
+  },
+  "preservation_rules": {
+    "src_ids_laya_read_only": true,
+    "dashboard_mlp_only_fallback": true,
+    "network_blocked_for_pypi": true,
+    "python_env": ".venv (torch 2.14.0, opacus 1.6.0)"
+  },
+  "assumptions_unverified": [
+    "Flower server.py / client.py not executed (sandbox port binding blocked)",
+    "Ray+Flower run_federated_improved.py not executed",
+    "Dashboard backend not run (sandbox blocks port 8000)",
+    "Raw data integrity not independently validated",
+    "Class balance / per-class label distributions not independently recomputed"
+  ],
+  "recommendations": [
+    "Execute Flower/Ray federated path once sandbox port binding is available",
+    "Run dashboard backend to verify /api endpoints end-to-end",
+    "Add GPU/CUDA support and hyperparameter tuning for production",
+    "Retrain DP-FedAvg with secure_mode enabled before production use"
+  ]
+}

@@ -1,0 +1,29 @@
+# Virtual environment
+.venv/
+venv/
+.env
+
+# Python caches
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Backups
+backups/
+
+# Large data — regenerate with src/data/preprocessing_validation.py
+data/raw/
+data/processed/
+
+# Excluded from push per scope
+dashboard/
+src/ids_laya/
+
+# Frontend build / dependencies
+node_modules/
+dist/
+package-lock.json
+
+# OS
+.DS_Store

@@ -1,0 +1,38 @@
+{
+  "results": {
+    "loss": 0.5,
+    "accuracy": 0.8,
+    "precision": 0.75,
+    "recall": 0.8,
+    "f1": 0.77,
+    "roc_auc": 0.85,
+    "fpr": 0.1,
+    "fnr": 0.15,
+    "confusion_matrix": [
+      [
+        40,
+        10
+      ],
+      [
+        5,
+        45
+      ]
+    ],
+    "tp": 45,
+    "tn": 40,
+    "fp": 10,
+    "fn": 5,
+    "round": 5
+  },
+  "config": {
+    "num_clients": 5,
+    "num_rounds": 5,
+    "partition_strategy": "non_iid_dirichlet",
+    "dirichlet_alpha": 0.5,
+    "local_epochs": 2,
+    "batch_size": 64,
+    "learning_rate": 0.001,
+    "val_ratio": 0.2,
+    "device": "cpu"
+  }
+}

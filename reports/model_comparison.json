@@ -1,0 +1,127 @@
+{
+  "project": "federated-ids",
+  "generated": "2026-11-12",
+  "dataset": "CIC-IDS2017",
+  "test_set": "504,473 rows x 70 features (stratified, test_size=0.2, random_state=42)",
+  "models": {
+    "centralized_mlp": {
+      "description": "MLPIDS trained on full training set (single-node baseline)",
+      "entry_point": "src/models/train_centralized.py",
+      "checkpoint": "models/centralized_mlp.pth",
+      "results": "models/centralized_mlp_results.json",
+      "config": {
+        "architecture": "128-64-32 hidden, BatchNorm, dropout 0.3, single logit",
+        "loss": "BCEWithLogitsLoss",
+        "optimizer": "Adam lr=0.001",
+        "batch_size": 256,
+        "epochs": 20,
+        "device": "cpu"
+      },
+      "metrics": {
+        "accuracy": 0.9770631926782999,
+        "precision": 0.9616296426376328,
+        "recall": 0.9000657462195923,
+        "f1": 0.9298297745892941,
+        "roc_auc": 0.9980757604417655,
+        "fpr": 0.007295544685509317,
+        "fnr": 0.09993425378040763,
+        "confusion_matrix": [[416238, 3059], [8512, 76664]],
+        "tp": 76664,
+        "tn": 416238,
+        "fp": 3059,
+        "fn": 8512,
+        "training_time_seconds": 219.54
+      },
+      "verified": true
+    },
+    "federated_mlp_manual_50_rounds": {
+      "description": "Manual FedAvg (no Ray/Flower), warm-started from centralized checkpoint",
+      "entry_point": "src/federated/run_manual_federated.py",
+      "checkpoint": "models/federated_mlp_manual.pth",
+      "results": "models/manual_federated_improved_results.json",
+      "config": {
+        "num_clients": 5,
+        "num_rounds": 50,
+        "partition_strategy": "non_iid_dirichlet",
+        "dirichlet_alpha": 0.5,
+        "local_epochs": 5,
+        "batch_size": 128,
+        "learning_rate": 0.001,
+        "aggregation": "sample-weighted FedAvg",
+        "warm_start": true,
+        "max_samples_per_client": 100000,
+        "device": "cpu"
+      },
+      "metrics": {
+        "accuracy": 0.9586796760559082,
+        "precision": 0.8818362041334774,
+        "recall": 0.8721353432891894,
+        "f1": 0.8769589469645546,
+        "roc_auc": null,
+        "fpr": 0.023739735795867845,
+        "fnr": 0.12786465671081057,
+        "confusion_matrix": [[409343, 9954], [10891, 74285]],
+        "tp": 74285,
+        "tn": 409343,
+        "fp": 9954,
+        "fn": 10891
+      },
+      "verified": true
+    },
+    "federated_mlp_dp_30_rounds": {
+      "description": "DP-FedAvg via Opacus 1.6.0 DP-SGD (per-example clipping + Gaussian noise, moments accountant)",
+      "entry_point": "src/federated/run_dp_federated.py",
+      "checkpoint": "models/federated_mlp_dp.pth",
+      "results": "models/dp_federated_results.json",
+      "config": {
+        "num_clients": 5,
+        "num_rounds": 30,
+        "partition_strategy": "non_iid_dirichlet",
+        "dirichlet_alpha": 0.5,
+        "local_epochs": 3,
+        "batch_size": 128,
+        "learning_rate": 0.001,
+        "max_grad_norm": 1.0,
+        "noise_multiplier": 1.0,
+        "delta": 0.00001,
+        "warm_start": true,
+        "device": "cpu",
+        "use_batchnorm": false
+      },
+      "metrics": {
+        "accuracy": 0.939217746257782,
+        "precision": 0.7371182002453261,
+        "recall": 0.9947755236216774,
+        "f1": 0.8467807620237351,
+        "roc_auc": 0.9949909946164437,
+        "fpr": 0.07206824756676056,
+        "fnr": 0.005224476378322532,
+        "confusion_matrix": [[389079, 30218], [445, 84731]],
+        "tp": 84731,
+        "tn": 389079,
+        "fp": 30218,
+        "fn": 445,
+        "simulation_time_seconds": 334.26
+      },
+      "privacy": {
+        "epsilon": 0.14567300442097406,
+        "delta": 1e-05,
+        "noise_multiplier": 1.0,
+        "max_grad_norm": 1.0,
+        "max_per_round_epsilon": 5.868981693514648,
+        "naive_composition_epsilon": 176.06945080543943,
+        "dp_enabled": true
+      },
+      "verified": true
+    }
+  },
+  "summary": {
+    "best_accuracy": "centralized_mlp (0.9771)",
+    "best_f1": "centralized_mlp (0.9298)",
+    "best_roc_auc": "centralized_mlp (0.9981)",
+    "lowest_fpr": "centralized_mlp (0.0073)",
+    "lowest_fnr": "federated_mlp_dp_30_rounds (0.0052)",
+    "highest_recall": "federated_mlp_dp_30_rounds (0.9948)",
+    "dp_privacy_budget": "epsilon=0.1457 at delta=1e-05"
+  }
+}

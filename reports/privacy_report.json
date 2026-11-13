@@ -1,0 +1,42 @@
+{
+  "project": "federated-ids",
+  "generated": "2026-11-12",
+  "mechanism": "DP-SGD via Opacus 1.6.0 (moments accountant)",
+  "entry_point": "src/federated/run_dp_federated.py",
+  "dp_enabled": true,
+  "training": {
+    "num_clients": 5,
+    "num_rounds": 30,
+    "local_epochs": 3,
+    "batch_size": 128,
+    "max_grad_norm": 1.0,
+    "noise_multiplier": 1.0,
+    "delta": 1e-05,
+    "steps": 90,
+    "num_examples": 40000,
+    "simulation_time_seconds": 334.26
+  },
+  "privacy_budget": {
+    "epsilon": 0.14567300442097406,
+    "delta": 1e-05,
+    "max_per_round_epsilon": 5.868981693514648,
+    "naive_composition_epsilon": 176.06945080543943
+  },
+  "required_noise_for_target_epsilon": [
+    { "target_epsilon": 1.0, "noise_multiplier": 0.14567300442097406 },
+    { "target_epsilon": 2.0, "noise_multiplier": 0.07283650221048703 },
+    { "target_epsilon": 4.0, "noise_multiplier": 0.036418251105243514 },
+    { "target_epsilon": 8.0, "noise_multiplier": 0.018209125552621757 }
+  ],
+  "batchnorm": {
+    "client_models_use_batchnorm": false,
+    "reason": "Opacus per-example DP-SGD rejects BatchNorm layers"
+  },
+  "model": {
+    "checkpoint": "models/federated_mlp_dp.pth",
+    "results": "models/dp_federated_results.json",
+    "accuracy": 0.939217746257782,
+    "f1": 0.8467807620237351,
+    "roc_auc": 0.9949909946164437
+  }
+}

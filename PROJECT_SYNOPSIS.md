@@ -1,60 +1,75 @@
-# Project Synopsis: Federated Learning System
+# Project Synopsis: Federated Learning IDS
+
+**Project:** Privacy-Preserving Federated Intrusion Detection System (IDS)
+**Dataset:** CIC-IDS2017
+**Last updated:** November 12, 2026
 
 ## Overview
-This document summarizes the two-week development sprint for the Federated Learning System project, focusing on data preprocessing in week 1 and machine learning model training in week 2.
 
-## Week 1: Data Preprocessing
-**Objective:** Prepare and clean the federated dataset for model training.
+This project implements an end-to-end privacy-preserving federated intrusion detection pipeline. The goal is to detect malicious network traffic (binary classification: BENIGN vs ATTACK) using a centralized MLP baseline, a manual FedAvg federated learner, and a differentially-private DP-FedAvg variant — all built on the CIC-IDS2017 dataset.
 
-**Activities Completed:**
-- Data collection from multiple federated sources
-- Data cleaning and normalization across all nodes
-- Handling missing values and outlier detection
-- Feature engineering and selection
-- Data partitioning for federated learning setup
-- Validation of data integrity and consistency
-- Implementation of privacy-preserving techniques (differential privacy, secure aggregation)
-- Documentation of preprocessing pipeline
+A FastAPI/React dashboard provides real-time inference, with a read-only Laya component (`src/ids_laya/`) available as an optional final-pipeline stage that degrades gracefully when unavailable.
 
-**Output:** Clean, preprocessed dataset ready for federated model training, stored in the federated data repository.
+## Dataset
 
-## Week 2: Machine Learning Model Training
-**Objective:** Train and validate machine learning models using the preprocessed federated data.
+- Source: CIC-IDS2017, 8 CSV files under `data/raw/MachineLearningCVE/`
+- Raw rows: 2,830,743
+- After cleaning: 2,017,889 train / 504,473 test rows × 70 features
+- Label mapping: BENIGN → 0, ATTACK → 1 (binary)
+- Split: stratified, `test_size=0.2`, `random_state=42`
+- Preprocessing: `StandardScaler` fit on train only; manifest in `reports/experiment_manifest.json`
 
-**Activities Completed:**
-- Implementation of federated learning framework
-- Training of Random Forest and XGBoost models across federated nodes
-- Hyperparameter tuning using cross-validation
-- Model performance evaluation (accuracy, precision, recall, F1-score)
-- Comparison of centralized vs. federated training approaches
-- Assessment of communication overhead and convergence rates
-- Validation of model robustness and generalization
-- Saving of trained model checkpoints
+## Models
 
-**Output:** Trained Random Forest and XGBoost models suitable for federated deployment, with performance metrics documented.
+| Component | Description |
+|---|---|
+| MLPIDS | 128→64→32 hidden layers, BatchNorm, dropout 0.3, single logit, BCEWithLogitsLoss (`src/models/mlp.py`) |
+| Centralized MLP | Trained on full training set; warm-start checkpoint for federation |
+| Manual FedAvg | 50 rounds, 5 clients, Dirichlet α=0.5 non-IID, local_epochs=5, batch 128, lr=0.001, sample-weighted aggregation |
+| DP-FedAvg | DP-SGD via Opacus 1.6.0; per-example gradient clipping + Gaussian noise; moments-accountant privacy accounting |
 
-## Key Achievements
-- Successfully implemented end-to-end preprocessing pipeline for federated data
-- Achieved competitive model performance using Random Forest and XGBoost in federated setting
-- Established baseline for future federated learning experiments
-- Documented all procedures for reproducibility
+## Key Results
 
-## Results
-- Centralized MLP model achieved 97.7% accuracy, 96.2% precision, 90.0% recall, and 93.0% F1-score.
-- Federated learning (manual) achieved 80.0% accuracy, 75.0% precision, 80.0% recall, and 77.0% F1-score over 5 rounds.
-- Detailed results, including confusion matrices and training histories, are stored in the `models/` directory:
-  - `centralized_mlp_results.json`
-  - `manual_federated_results.json`
-  - `test_manual_federated_results.json`
+| Metric | Centralized MLP | Manual FedAvg (50 rounds) |
+|---|---|---|
+| Accuracy | 97.71% | 95.87% |
+| Precision | 96.16% | 88.18% |
+| Recall | 90.01% | 87.21% |
+| F1-score | 92.98% | 87.70% |
+| ROC-AUC | 99.81% | — |
 
-## Next Steps
-- Model deployment and inference testing
-- Performance optimization and scaling experiments
-- Evaluation of different federated learning algorithms
-- Preparation for production deployment considerations
-- Future enhancement: Integration of Laya framework for improved federated learning coordination
-- Development of interactive dashboard to visualize preprocessing steps, model training progress, and performance metrics
-- Summary of trained models: Random Forest Classifier, XGBoost Classifier
+Full metrics and confusion matrices are stored in `models/centralized_mlp_results.json` and `models/manual_federated_improved_results.json`.
 
----
-*Synopsis updated on October 16, 2026*
+## Testing
+
+- 50 unit tests across 5 files (`tests/test_mlp.py`, `tests/test_federated.py`, `tests/test_dp.py`, `tests/test_preprocessing.py`, `tests/test_dashboard.py`)
+- All tests pass; run with `python -m unittest discover -s tests`
+- `pytest` is unavailable (network blocked for PyPI); `unittest` is used instead
+
+## Components
+
+- `src/data/preprocessing_validation.py` — dataset integrity validation + manifest generation
+- `src/models/mlp.py` — MLPIDS model definition
+- `src/privacy/dp_sgd.py` — DPSGDTrainer (Opacus + manual fallback), privacy accounting
+- `src/federated/run_manual_federated.py` — manual FedAvg helpers + training loop
+- `src/federated/run_dp_federated.py` — DP-FedAvg end-to-end training
+- `dashboard/backend/main.py` — FastAPI inference API with MLP-only fallback
+- `dashboard/frontend/src/` — React frontend (Header, SystemStatus, etc.)
+
+## Preservation Rules
+
+- `src/ids_laya/` is **read-only / off-limits** — no source changes permitted.
+- Dashboard MLP-only fallback must not modify Laya source.
+- Network is blocked for PyPI — dependencies must already be present in `.venv` (torch 2.14.0, opacus 1.6.0).
+
+## Key Artifacts
+
+- `models/centralized_mlp.pth` — centralized checkpoint
+- `models/federated_mlp_manual.pth` — manual FedAvg checkpoint
+- `models/federated_mlp_dp.pth` — DP-FedAvg checkpoint (generated by `run_dp_federated.py`)
+- `reports/experiment_manifest.json` — dataset manifest
+- `reports/test_results.md` — full test suite results
+- `reports/final_project_audit.md` — final audit
+- `reports/final_project_status.json` — final status JSON
+- `reports/model_comparison.json` — model comparison
+- `reports/privacy_report.json` — DP privacy report
