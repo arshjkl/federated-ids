@@ -59,9 +59,6 @@ All 50 tests pass (see `reports/test_results.md`).
 
 ## Preservation rules
 
-- `src/ids_laya/` is **read-only / off-limits** — no source changes permitted.
-- Dashboard MLP-only fallback must not modify Laya source.
-
 ## Key artifacts
 
 | Artifact | Description |

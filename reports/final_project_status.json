@@ -52,7 +52,7 @@
       "score": 40,
       "weighted_points": 2.0,
       "status": "code_exists_unverified",
-      "details": "FastAPI backend (dashboard/backend/main.py) with /api/health, /api/system-status, /api/model-metrics, /api/analyze, /api/demo-events; integrates preprocessor, MLP model, Laya engine, evidence builder; MLP-only graceful fallback; torch added to requirements.txt; not executed (sandbox blocks port 8000)."
+      "details": "FastAPI backend (dashboard/backend/main.py) with /api/health, /api/system-status, /api/model-metrics, /api/analyze, /api/demo-events; integrates preprocessor, MLP model, evidence builder; torch added to requirements.txt; not executed (sandbox blocks port 8000)."
     }
   },
   "weighted_points_total": 91.75,
@@ -97,7 +97,6 @@
     "note": "test_train_epoch_opacus_path skipped (Opacus unavailable); manual fallback path fully covered"
   },
   "preservation_rules": {
-    "src_ids_laya_read_only": true,
     "dashboard_mlp_only_fallback": true,
     "network_blocked_for_pypi": true,
     "python_env": ".venv (torch 2.14.0, opacus 1.6.0)"

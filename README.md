@@ -7,10 +7,15 @@ Privacy-Preserving Federated Intrusion Detection System (IDS) built on the CIC-I
 This project implements an end-to-end privacy-preserving federated intrusion detection pipeline. It detects malicious network traffic (binary classification: BENIGN vs ATTACK) using:
 
 - **Centralized MLP baseline** — single-node training on the full training set (97.71% accuracy)
+- **Centralized MLP (improved)** — ImprovedMLPIDS with weighted BCE / focal loss, LR scheduling, early stopping, threshold optimization
 - **Manual FedAvg** — 50 rounds, 5 clients, Dirichlet α=0.5 non-IID partitioning, warm-started from the centralized checkpoint (95.87% accuracy)
+- **Improved FedAvg** — FedAvg with ImprovedMLPIDS, weighted BCE, per-client LR scheduling, threshold optimization
+- **FedProx** — FedAvg with proximal term (mu) to reduce client drift
 - **DP-FedAvg** — differentially-private federated averaging with DP-SGD via Opacus 1.6.0 (per-example gradient clipping + Gaussian noise, moments-accountant privacy accounting, epsilon=0.1457 at delta=1e-05)
+- **Improved DP-FedAvg** — DP-FedAvg with correct batch-level privacy accounting, ImprovedMLPIDS, weighted BCE, threshold optimization
+- **DP-FedProx** — DP-FedAvg with proximal term (mu) + DP-SGD
 
-## Key results
+## Key results (baselines)
 
 | Model | Accuracy | Precision | Recall | F1 | ROC-AUC |
 |---|---|---|---|---|---|
@@ -18,7 +23,7 @@ This project implements an end-to-end privacy-preserving federated intrusion det
 | Manual FedAvg (50 rounds) | 95.87% | 88.18% | 87.21% | 87.70% | — |
 | DP-FedAvg (30 rounds) | 93.92% | 73.71% | 99.48% | 84.68% | 99.50% |
 
-Full metrics and confusion matrices: `models/centralized_mlp_results.json`, `models/manual_federated_improved_results.json`, `models/dp_federated_results.json`.
+Improved variant results are written to `models/model_comparison_improved.json` after running `src/federated/run_comparison.py`. Baseline results remain in `models/centralized_mlp_results.json`, `models/manual_federated_improved_results.json`, `models/dp_federated_results.json`.
 
 ## Repository structure
 
@@ -41,14 +46,21 @@ federated-ids/
 ├── reports/              # Validation, audit, status, and experiment reports
 ├── src/
 │   ├── data/preprocessing_validation.py
-│   ├── models/mlp.py                 # MLPIDS model definition
-│   ├── models/train_centralized.py   # Centralized training (20 epochs)
+│   ├── models/mlp.py                 # MLPIDS + ImprovedMLPIDS, FocalLoss
+│   ├── models/train_centralized.py   # Centralized training (20 epochs baseline + improved)
 │   ├── federated/
-│   │   ├── run_manual_federated.py   # Manual FedAvg (50 rounds)
-│   │   └── run_dp_federated.py       # DP-FedAvg (30 rounds)
-│   ├── privacy/dp_sgd.py             # DP-SGD trainer + privacy accounting
+│   │   ├── run_manual_federated.py   # Manual FedAvg (50 rounds) + improved + FedProx
+│   │   ├── run_dp_federated.py       # DP-FedAvg (30 rounds) + improved + DP-FedProx
+│   │   └── run_comparison.py         # NEW: all-variants comparison runner
+│   ├── privacy/dp_sgd.py             # DP-SGD trainer + privacy accounting (+ batches_per_epoch)
 │   └── utils/explore_dataset.py
-├── tests/                # 50 unit tests (unittest), all passing
+├── tests/
+│   ├── test_mlp.py
+│   ├── test_federated.py
+│   ├── test_dp.py
+│   ├── test_improved.py              # NEW: improved MLP, losses, FedProx, threshold, privacy
+│   ├── test_preprocessing.py
+│   └── test_dashboard.py
 ├── validate_centralized.py # Centralized validation script
 └── .venv/                # Python env (torch 2.14.0, opacus 1.6.0)
 ```
@@ -110,9 +122,34 @@ PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python src/federated/run
 
 Trains 30 rounds with DP-SGD (noise_multiplier=1.0, max_grad_norm=1.0, delta=1e-05). Saves `models/federated_mlp_dp.pth`, `models/dp_federated_results.json`, and `reports/privacy_report.json`.
 
+### 6. Run improved variants (all models)
+
+```bash
+PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python src/federated/run_comparison.py
+```
+
+Runs Centralized (baseline + improved), FedAvg (baseline + improved), FedProx, DP-FedAvg (baseline + improved), DP-FedProx under identical data/seed conditions. Writes `models/model_comparison_improved.json` and prints a side-by-side table.
+
+### 7. Run individual improved variants
+
+Centralized improved:
+```bash
+PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python -c "from src.models.train_centralized import train_centralized_improved; train_centralized_improved()"
+```
+
+Improved FedAvg / FedProx:
+```bash
+PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python -c "from src.federated.run_manual_federated import run_manual_federated_improved, run_manual_federated_prox; run_manual_federated_improved(); run_manual_federated_prox()"
+```
+
+Improved DP-FedAvg / DP-FedProx:
+```bash
+PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python -c "from src.federated.run_dp_federated import run_dp_federated_improved, run_dp_federated_prox; run_dp_federated_improved(); run_dp_federated_prox()"
+```
+
 ### Expected order
 
-Run steps 1 → 2 → 4 → 5 in order (steps 3 is optional validation). Steps 4 and 5 both warm-start from the centralized checkpoint produced in step 2.
+Run steps 1 → 2 → 4 → 5 in order (step 3 is optional validation). Steps 4, 5, and 6 all warm-start from the centralized checkpoint produced in step 2. Step 6 runs all improved variants in one go.
 
 ## Tests
 
@@ -122,7 +159,7 @@ Run the full suite with the project's unittest runner (pytest unavailable — ne
 PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python -m unittest discover -s tests
 ```
 
-All 50 tests pass (documented in `reports/test_results.md`).
+All tests pass (66 tests across 6 files; documented in `reports/test_results.md`).
 
 ## Documentation
 
@@ -139,5 +176,5 @@ See `docs/` for per-component details:
 
 ## Notes
 
-- This repository intentionally excludes `src/ids_laya/` (read-only Laya component) and `dashboard/` (FastAPI/React frontend).
+- This repository intentionally excludes `dashboard/` (FastAPI/React frontend).
 - All model files are under GitHub's 100MB per-file limit.

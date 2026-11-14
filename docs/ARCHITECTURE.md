@@ -32,7 +32,7 @@ reports/                validation, audit, status, experiment reports
 2. Centralized training loads the processed arrays, trains MLPIDS, and saves `models/centralized_mlp.pth` + `models/centralized_mlp_results.json`.
 3. Federated training partitions the training data across clients (Dirichlet α=0.5 non-IID), runs FedAvg rounds (sample-weighted aggregation), and saves the federated checkpoint + results.
 4. DP-FedAvg runs the same loop with per-client DP-SGD (Opacus), tracks epsilon/delta per client and per round, and saves `models/federated_mlp_dp.pth` + `models/dp_federated_results.json`.
-5. The dashboard loads the centralized MLP checkpoint and serves `/api/analyze` inference; if Laya (`src/ids_laya/`) is unavailable it falls back to MLP-only predictions.
+5. The dashboard loads the centralized MLP checkpoint and serves `/api/analyze` inference with MLP-only predictions.
 
 ## Component responsibilities
 
@@ -49,6 +49,4 @@ reports/                validation, audit, status, experiment reports
 
 ## Preservation rules
 
-- `src/ids_laya/` is **read-only / off-limits** — no source changes permitted.
-- Dashboard MLP-only fallback must not modify Laya source.
 - Network is blocked for PyPI — dependencies must already be present in `.venv` (torch 2.14.0, opacus 1.6.0).

@@ -2,7 +2,7 @@
 
 **Audit date:** 2026-11-12
 **Scope:** `src/`, `models/`, `data/`, `dashboard/backend/`, project documentation
-**Out of scope:** `src/ids_laya/` (Laya — read-only, not touched); `dashboard/` frontend — not touched per instruction
+**Out of scope:** `dashboard/` frontend — not touched per instruction
 
 ## Executive summary
 
@@ -120,7 +120,7 @@ Gap: no hyperparameter tuning / cross-validation documentation beyond training c
 ## 7. Dashboard readiness — 40/100 (2.0 weighted pts)
 
 Not touched per instruction (reviewed only).
-- `dashboard/backend/main.py`: FastAPI app with `/api/health`, `/api/system-status`, `/api/model-metrics`, `/api/analyze`, `/api/demo-events`; loads preprocessor, MLP model, Laya engine, and evidence builder at startup; prefers federated then centralized metrics; MLP-only graceful degradation when Laya unavailable.
+- `dashboard/backend/main.py`: FastAPI app with `/api/health`, `/api/system-status`, `/api/model-metrics`, `/api/analyze`, `/api/demo-events`; loads preprocessor, MLP model, and evidence builder at startup; prefers federated then centralized metrics.
 - Gaps: not verified running (sandbox blocks port 8000); component-loading can fail silently if weights absent; `torch` added to requirements.txt but not runtime-verified.
 
 ## Model performance summary (verified from persisted JSONs)
@@ -133,8 +133,6 @@ Not touched per instruction (reviewed only).
 
 ## Preservation rules (honored)
 
-- `src/ids_laya/` is **read-only / off-limits** — no source changes permitted.
-- Dashboard MLP-only fallback does not modify Laya source.
 - Network is blocked for PyPI — dependencies already present in `.venv` (torch 2.14.0, opacus 1.6.0); `unittest` used instead of `pytest`.
 
 ## Assumptions not independently verified

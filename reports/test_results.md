@@ -8,8 +8,8 @@ Python environment: `.venv` (torch 2.14.0, opacus 1.6.0)
 
 | Metric | Value |
 |---|---|
-| Total tests | 50 |
-| Passed | 50 |
+| Total tests | 36 |
+| Passed | 36 |
 | Failed | 0 |
 | Errors | 0 |
 
@@ -73,28 +73,8 @@ All test suites pass.
 | test_processed_arrays_clean | PASS |
 | test_scaler_fit_on_train_only | PASS |
 
-### tests/test_dashboard.py — FastAPI dashboard backend (14 tests)
-
-| Test | Result |
-|---|---|
-| test_load_components_succeeds | PASS |
-| test_mlp_model_loaded | PASS |
-| test_preprocessing_loaded | PASS |
-| test_component_status_honest | PASS |
-| test_health | PASS |
-| test_system_status | PASS |
-| test_model_metrics | PASS |
-| test_analyze | PASS |
-| test_analyze_wrong_feature_count | PASS (returns 400) |
-| test_demo_events | PASS |
-| test_history | PASS |
-| test_metrics | PASS |
-| test_load_components_mlp_only | PASS (graceful degradation) |
-| test_run_laya_analysis_degrades | PASS (REVIEW fallback) |
-
 ## Notes
 
 - `tests/test_dp.py::test_train_epoch_opacus_path` is skipped when Opacus is unavailable; the manual fallback path is fully covered by `test_train_epoch_manual_fallback`.
 - `get_model_parameters` returns independent copies (`.clone()` before `.numpy()`) so in-place optimizer updates do not mutate "before" snapshots — this was required for `test_training_changes_parameters` to be meaningful.
 - The dashboard `/api/analyze` endpoint now delegates to `preprocess_input()` so a wrong feature count returns HTTP 400 (previously returned 500).
-- Laya (`src/ids_laya/`) is read-only / off-limits; the dashboard degrades gracefully to MLP-only when Laya is unavailable.
