@@ -113,13 +113,43 @@
         "dp_enabled": true
       },
       "verified": true
+    },
+    "centralized_mlp_improved": {
+      "description": "Improved MLP with residual connections, GELU, LayerNorm, FocalLoss, threshold optimization (optimal threshold 0.58)",
+      "entry_point": "src/models/train_improved.py",
+      "checkpoint": "models/centralized_mlp_improved.pth",
+      "results": "embedded in checkpoint",
+      "config": {
+        "architecture": "256-128-64-32 hidden, residual connections, LayerNorm, dropout 0.2, single logit",
+        "loss": "FocalLoss",
+        "optimizer": "AdamW lr=0.001",
+        "batch_size": 512,
+        "epochs": 50,
+        "device": "cpu"
+      },
+      "metrics": {
+        "accuracy": 0.9971871636341291,
+        "precision": 0.9953983557106524,
+        "recall": 0.9879073917535456,
+        "f1": 0.9916387270123916,
+        "roc_auc": 0.9999055083412628,
+        "fpr": 0.0009277433418316849,
+        "fnr": 0.0120926082464544,
+        "confusion_matrix": [[418908, 389], [1030, 84146]],
+        "tp": 84146,
+        "tn": 418908,
+        "fp": 389,
+        "fn": 1030,
+        "optimal_threshold": 0.58
+      },
+      "verified": true
     }
   },
   "summary": {
-    "best_accuracy": "centralized_mlp (0.9771)",
-    "best_f1": "centralized_mlp (0.9298)",
-    "best_roc_auc": "centralized_mlp (0.9981)",
-    "lowest_fpr": "centralized_mlp (0.0073)",
+    "best_accuracy": "centralized_mlp_improved (0.9972)",
+    "best_f1": "centralized_mlp_improved (0.9916)",
+    "best_roc_auc": "centralized_mlp_improved (0.9999)",
+    "lowest_fpr": "centralized_mlp_improved (0.0009)",
     "lowest_fnr": "federated_mlp_dp_30_rounds (0.0052)",
     "highest_recall": "federated_mlp_dp_30_rounds (0.9948)",
     "dp_privacy_budget": "epsilon=0.1457 at delta=1e-05"

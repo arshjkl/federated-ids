@@ -3,7 +3,7 @@
 **Project:** Privacy-Preserving Federated Intrusion Detection System (IDS)  
 **Dataset:** CIC-IDS2017  
 **Last updated:** November 13, 2026  
-**Scope:** Federated ML pipeline only — no dashboard  
+**Scope:** Federated ML pipeline only  
 
 ## Overview
 
@@ -35,7 +35,9 @@ All components are verified end-to-end with persisted checkpoints, results JSON,
 | Improved DP-FedAvg | DP-FedAvg + correct batch-level privacy accounting + ImprovedMLPIDS + weighted BCE + threshold optimization |
 | DP-FedProx | DP-FedAvg with proximal term (mu) + DP-SGD |
 
-## Key Results (baselines)
+## Key Results
+
+### Baselines
 
 | Metric | Centralized MLP | Manual FedAvg (50 rounds) | DP-FedAvg (30 rounds) |
 |---|---|---|---|
@@ -45,13 +47,26 @@ All components are verified end-to-end with persisted checkpoints, results JSON,
 | F1-score | 92.98% | 87.70% | 84.68% |
 | ROC-AUC | 99.81% | — | 99.50% |
 
+### Improved Variants (ImprovedMLPIDS: 256→128→64→32, residual blocks, LayerNorm, FocalLoss, LR scheduling, threshold optimization)
+
+| Metric | Centralized Improved | Federated v2 (round 20) |
+|---|---|---|
+| Accuracy | 99.72% | 99.44% |
+| Precision | 99.54% | 97.43% |
+| Recall | 98.79% | 99.30% |
+| F1-score | 99.16% | 98.36% |
+| ROC-AUC | 99.99% | 99.98% |
+| FPR | 0.09% | 0.53% |
+| FNR | 1.21% | 0.70% |
+| Optimal Threshold | 0.58 | 0.50 |
+
 DP-FedAvg privacy budget: **epsilon=0.1457 at delta=1e-05** (naive composition bound: 176.07)
 
-Improved variant results are written to `models/model_comparison_improved.json` by `src/federated/run_comparison.py`. Baseline results remain in `models/centralized_mlp_results.json`, `models/manual_federated_improved_results.json`, and `models/dp_federated_results.json`.
+Improved variant results are written to `models/model_comparison_improved.json` by `src/federated/run_comparison.py`. Baseline results remain in `models/centralized_mlp_results.json`, `models/manual_federated_improved_results.json`, and `models/dp_federated_results.json`. Improved checkpoints: `models/centralized_mlp_improved.pth`, `models/checkpoints/federated_v2_round_20.pth`.
 
 ## Testing
 
-- 66 unit tests across 6 files (`tests/test_mlp.py`, `tests/test_federated.py`, `tests/test_dp.py`, `tests/test_improved.py`, `tests/test_preprocessing.py`, `tests/test_dashboard.py`)
+- 66 unit tests across 5 files (`tests/test_mlp.py`, `tests/test_federated.py`, `tests/test_dp.py`, `tests/test_improved.py`, `tests/test_preprocessing.py`)
 - All tests pass; run with `python -m unittest discover -s tests`
 - `pytest` is unavailable (network blocked for PyPI); `unittest` is used instead
 
@@ -69,7 +84,6 @@ Improved variant results are written to `models/model_comparison_improved.json` 
 ## Preservation Rules
 
 - Network is blocked for PyPI — dependencies must already be present in `.venv` (torch 2.14.0, opacus 1.6.0).
-- This repository intentionally excludes `dashboard/` (FastAPI/React frontend). No references to it are included.
 
 ## Key Artifacts
 

@@ -77,4 +77,3 @@ All test suites pass.
 
 - `tests/test_dp.py::test_train_epoch_opacus_path` is skipped when Opacus is unavailable; the manual fallback path is fully covered by `test_train_epoch_manual_fallback`.
 - `get_model_parameters` returns independent copies (`.clone()` before `.numpy()`) so in-place optimizer updates do not mutate "before" snapshots — this was required for `test_training_changes_parameters` to be meaningful.
-- The dashboard `/api/analyze` endpoint now delegates to `preprocess_input()` so a wrong feature count returns HTTP 400 (previously returned 500).

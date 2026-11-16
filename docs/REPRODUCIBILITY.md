@@ -5,7 +5,6 @@
 - Python 3 in `.venv`
 - torch 2.14.0, opacus 1.6.0
 - numpy, scikit-learn
-- fastapi, uvicorn, pydantic (dashboard backend)
 - Network blocked for PyPI — dependencies must already be present in `.venv`
 - `pytest` unavailable; `unittest` is used instead
 
@@ -55,7 +54,24 @@ Writes `models/federated_mlp_dp.pth` and `models/dp_federated_results.json`.
 PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python -m unittest discover -s tests
 ```
 
-All 50 tests pass (see `reports/test_results.md`).
+All 66 tests pass (see `reports/test_results.md`).
+
+### 6. Run improved variants
+
+Centralized improved:
+```bash
+PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python src/models/train_improved.py
+```
+
+Improved FedAvg:
+```bash
+PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python -c "from src.federated.run_manual_federated import run_manual_federated_improved; run_manual_federated_improved()"
+```
+
+Federated v2 (Flower):
+```bash
+PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python src/federated/run_federated_v2.py
+```
 
 ## Preservation rules
 

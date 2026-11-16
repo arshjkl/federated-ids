@@ -1,8 +1,8 @@
 {
   "project": "federated-ids",
   "audit_date": "2026-11-12",
-  "scope": ["src/", "models/", "data/", "dashboard/backend/", "project documentation"],
-  "out_of_scope": ["dashboard/frontend/"],
+  "scope": ["src/", "models/", "data/", "project documentation"],
+  "out_of_scope": [],
   "overall_completion_percent": 54,
   "weights": {
     "dataset_preprocessing": 15,
@@ -10,8 +10,7 @@
     "federated_learning": 25,
     "differential_privacy": 15,
     "evaluation_testing": 15,
-    "documentation_reproducibility": 10,
-    "dashboard_readiness": 5
+    "documentation_reproducibility": 10
   },
   "component_scores": {
     "dataset_preprocessing": {
@@ -48,17 +47,11 @@
       "score": 35,
       "weighted_points": 3.5,
       "status": "partial_false_claims",
-      "details": "Code carries docstrings; PROJECT_SYNOPSIS.md and results JSONs/checkpoints exist. But PROJECT_SYNOPSIS.md contains false claims (Random Forest/XGBoost trained; differential privacy implemented) and cites the 5-round test (80% acc) instead of the completed 50-round run (95.9%). No root README, no run/reproduce instructions, no experiment-config documentation. dashboard/backend/requirements.txt omits torch and flwr."
-    },
-    "dashboard_readiness": {
-      "score": 40,
-      "weighted_points": 2.0,
-      "status": "code_exists_unverified",
-      "details": "Not touched per instruction (reviewed only). FastAPI backend (dashboard/backend/main.py) with /api/health, /api/system-status, /api/model-metrics, /api/analyze, /api/demo-events; integrates preprocessor, MLP model, evidence builder. requirements.txt missing torch and flwr; not verified running (sandbox blocks port 8000)."
+      "details": "Code carries docstrings; PROJECT_SYNOPSIS.md and results JSONs/checkpoints exist. But PROJECT_SYNOPSIS.md contains false claims (Random Forest/XGBoost trained; differential privacy implemented) and cites the 5-round test (80% acc) instead of the completed 50-round run (95.9%). No root README, no run/reproduce instructions, no experiment-config documentation."
     }
   },
-  "weighted_points_total": 54.0,
-  "weighted_points_max": 100.0,
+  "weighted_points_total": 52.0,
+  "weighted_points_max": 95.0,
   "model_metrics": {
     "centralized_mlp": {
       "source": "models/centralized_mlp_results.json",
@@ -120,14 +113,12 @@
     "StandardScaler fit on training data only (no data leakage); stratified train/test split",
     "Centralized MLP training (20 epochs) with persisted model and metrics JSON",
     "Manual FedAvg federated training (50 rounds, 5 clients) with persisted model, metrics JSON, per-round history, per-client metrics, and checkpoints",
-    "MLPIDS nn.Module compatibility fix applied (src/models/mlp.py:38)",
-    "Dashboard backend integrates preprocessor, MLP model, evidence builder (code present, not executed)"
+    "MLPIDS nn.Module compatibility fix applied (src/models/mlp.py:38)"
   ],
   "assumptions_unverified": [
     "Class balance / per-class label distributions not independently recomputed",
     "Flower server.py / client.py not executed (sandbox port binding blocked)",
     "Ray+Flower run_federated_improved.py not executed",
-    "Dashboard backend not run (sandbox blocks port 8000)",
     "Raw data integrity not independently validated"
   ],
   "gaps": [
@@ -136,8 +127,7 @@
     "No ROC-AUC in federated evaluation metrics",
     "CPU-only training; no CUDA/GPU support",
     "No hyperparameter tuning, cross-validation, or early stopping",
-    "No root README; no run/reproduce instructions",
-    "dashboard/backend/requirements.txt missing torch and flwr"
+    "No root README; no run/reproduce instructions"
   ],
   "false_claims_in_documentation": [
     "PROJECT_SYNOPSIS.md: 'Training of Random Forest and XGBoost models across federated nodes' — no RF/XGB code exists",
@@ -148,7 +138,7 @@
     "Implement differential privacy in src/privacy/ (DP-SGD, gradient clipping + Gaussian noise, epsilon/delta accounting)",
     "Build an evaluation/test suite in src/evaluation/ (unit tests for preprocessing, model forward, FedAvg aggregation)",
     "Correct PROJECT_SYNOPSIS.md — remove RF/XGBoost and DP claims; report actual 50-round manual federated result",
-    "Add torch and flwr to dashboard/backend/requirements.txt; add a root README.md with run/reproduce instructions",
+    "Add a root README.md with run/reproduce instructions",
     "Add ROC-AUC to federated evaluation; consider GPU/CUDA support and hyperparameter tuning"
   ]
 }

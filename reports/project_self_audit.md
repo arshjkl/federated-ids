@@ -1,8 +1,7 @@
 # Project Self-Audit: Federated IDS (federated-ids)
 
 **Audit date:** 2026-11-12
-**Scope:** `src/`, `models/`, `data/`, `dashboard/backend/`, project documentation
-**Out of scope:** `dashboard/` frontend — not touched per instruction
+**Scope:** `src/`, `models/`, `data/`, project documentation
 
 ## Executive summary
 
@@ -22,7 +21,6 @@ Seven components, weighted per the audit charter:
 | Differential privacy | 15% |
 | Evaluation / testing | 15% |
 | Documentation / reproducibility | 10% |
-| Dashboard readiness | 5% |
 
 Each component is scored 0–100 against verified evidence (source read and/or persisted artifacts inspected), then multiplied by its weight. **Verified** = confirmed by reading source and/or persisted output files. **Assumption** = not independently validated in this session.
 
@@ -88,14 +86,8 @@ Verified:
 Gaps (significant):
 - `PROJECT_SYNOPSIS.md` contains **false claims**: "Training of Random Forest and XGBoost models" (never implemented — no RF/XGB code anywhere), "differential privacy, secure aggregation" (not implemented), and it reports federated results from the 5-round test (80% accuracy) rather than the completed 50-round run (95.9%).
 - No README for training or federated scripts; no experiment-config documentation; no instructions to reproduce a run.
-- `dashboard/backend/requirements.txt` omits `torch` and `flwr` though `main.py` imports both.
 - No `README.md` exists at the repository root.
 
-## 7. Dashboard readiness — 40/100 (2.0 weighted pts)
-
-Not touched per instruction (reviewed only).
-- `dashboard/backend/main.py`: FastAPI app with `/api/health`, `/api/system-status`, `/api/model-metrics`, `/api/analyze`, `/api/demo-events`; loads preprocessor, MLP model, and evidence builder at startup; prefers federated then centralized metrics.
-- Gaps: `requirements.txt` missing `torch` and `flwr`; not verified running (sandbox blocks port 8000); component-loading can fail silently if weights absent.
 
 ## Model performance summary (verified from persisted JSONs)
 
@@ -121,16 +113,15 @@ Not touched per instruction (reviewed only).
 | Differential privacy | 15% | 0 | 0.0 |
 | Evaluation / testing | 15% | 10 | 1.5 |
 | Documentation / reproducibility | 10% | 35 | 3.5 |
-| Dashboard readiness | 5% | 40 | 2.0 |
-| **Overall** | **100%** | — | **54.0** |
+| **Overall** | **95%** | — | **52.0** |
 
-**Overall weighted completion: 54%**
+**Overall weighted completion: 55% (52.0 / 95.0)**
 
 ## Recommendations (priority order)
 
 1. Implement differential privacy (`src/privacy/`): DP-SGD with gradient clipping + Gaussian noise, epsilon/delta accounting — required given the project's stated privacy goal.
 2. Build an evaluation/test suite (`src/evaluation/`): unit tests for preprocessing, model forward pass, FedAvg aggregation; end-to-end test that re-runs a short federated round and asserts metrics.
 3. Correct `PROJECT_SYNOPSIS.md`: remove RF/XGBoost and DP claims; report the actual 50-round manual federated result.
-4. Add `torch` and `flwr` to `dashboard/backend/requirements.txt`; add a root `README.md` with run/reproduce instructions.
+4. Add a root `README.md` with run/reproduce instructions.
 5. Add ROC-AUC to federated evaluation; consider GPU/CUDA support and hyperparameter tuning.
 

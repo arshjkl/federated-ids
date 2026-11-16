@@ -15,15 +15,24 @@ This project implements an end-to-end privacy-preserving federated intrusion det
 - **Improved DP-FedAvg** — DP-FedAvg with correct batch-level privacy accounting, ImprovedMLPIDS, weighted BCE, threshold optimization
 - **DP-FedProx** — DP-FedAvg with proximal term (mu) + DP-SGD
 
-## Key results (baselines)
+## Key Results
+
+### Baselines
 
 | Model | Accuracy | Precision | Recall | F1 | ROC-AUC |
 |---|---|---|---|---|---|
-| Centralized MLP | 97.71% | 96.16% | 90.01% | 92.98% | 99.81% |
+| Centralized MLP (20 epochs) | 97.71% | 96.16% | 90.01% | 92.98% | 99.81% |
 | Manual FedAvg (50 rounds) | 95.87% | 88.18% | 87.21% | 87.70% | — |
 | DP-FedAvg (30 rounds) | 93.92% | 73.71% | 99.48% | 84.68% | 99.50% |
 
-Improved variant results are written to `models/model_comparison_improved.json` after running `src/federated/run_comparison.py`. Baseline results remain in `models/centralized_mlp_results.json`, `models/manual_federated_improved_results.json`, `models/dp_federated_results.json`.
+### Improved Variants (ImprovedMLPIDS: 256→128→64→32, residual, LayerNorm, FocalLoss, threshold optimization)
+
+| Model | Accuracy | Precision | Recall | F1 | ROC-AUC | FPR | FNR | Optimal Threshold |
+|---|---|---|---|---|---|---|---|---|
+| Centralized Improved | 99.72% | 99.54% | 98.79% | 99.16% | 99.99% | 0.09% | 1.21% | 0.58 |
+| Federated v2 (round 20, 30 rounds total) | 99.44% | 97.43% | 99.30% | 98.36% | 99.98% | 0.53% | 0.70% | 0.50 |
+
+Baseline results in `models/centralized_mlp_results.json`, `models/manual_federated_improved_results.json`, `models/dp_federated_results.json`. Improved checkpoints: `models/centralized_mlp_improved.pth`, `models/checkpoints/federated_v2_round_20.pth`.
 
 ## Repository structure
 
@@ -59,8 +68,7 @@ federated-ids/
 │   ├── test_federated.py
 │   ├── test_dp.py
 │   ├── test_improved.py              # NEW: improved MLP, losses, FedProx, threshold, privacy
-│   ├── test_preprocessing.py
-│   └── test_dashboard.py
+│   └── test_preprocessing.py
 ├── validate_centralized.py # Centralized validation script
 └── .venv/                # Python env (torch 2.14.0, opacus 1.6.0)
 ```
@@ -176,5 +184,4 @@ See `docs/` for per-component details:
 
 ## Notes
 
-- This repository intentionally excludes `dashboard/` (FastAPI/React frontend).
 - All model files are under GitHub's 100MB per-file limit.

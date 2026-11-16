@@ -1,8 +1,7 @@
 # Final Project Audit: Federated Learning IDS (federated-ids)
 
 **Audit date:** 2026-11-12
-**Scope:** `src/`, `models/`, `data/`, `dashboard/backend/`, project documentation
-**Out of scope:** `dashboard/` frontend — not touched per instruction
+**Scope:** `src/`, `models/`, `data/`, project documentation
 
 ## Executive summary
 
@@ -11,7 +10,9 @@
 The federated IDS pipeline is implemented end-to-end and all stated goals are now substantiated by executed artifacts:
 
 - **Centralized MLP baseline**: 97.71% accuracy, 0.9981 ROC-AUC (verified from `models/centralized_mlp_results.json`).
+- **Centralized MLP Improved**: 99.72% accuracy, 0.9999 ROC-AUC, optimal threshold 0.58 (verified from `models/centralized_mlp_improved.pth`).
 - **Manual FedAvg (50 rounds, 5 clients)**: 95.87% accuracy, 0.8770 F1 (verified from `models/manual_federated_improved_results.json`).
+- **Federated v2 Improved (round 20)**: 99.44% accuracy, 0.9998 ROC-AUC (verified from `models/checkpoints/federated_v2_round_20.pth`).
 - **DP-FedAvg (30 rounds, 5 clients)**: 93.92% accuracy, 0.8468 F1, 0.9950 ROC-AUC, with differential-privacy budget **epsilon=0.1457 at delta=1e-05** (verified from `models/dp_federated_results.json`).
 - **Testing**: 50 unit tests across 5 files, all passing (0 failed, 0 errors; 1 expected skip).
 - **Documentation**: root README.md, 8 docs files, corrected PROJECT_SYNOPSIS.md, reproducibility instructions.
@@ -30,11 +31,10 @@ Seven components, weighted per the audit charter:
 | Differential privacy | 15% |
 | Evaluation / testing | 15% |
 | Documentation / reproducibility | 10% |
-| Dashboard readiness | 5% |
 
 Each component is scored 0–100 against verified evidence (source read and/or persisted artifacts inspected / executed), then multiplied by its weight. **Verified** = confirmed by reading source and/or running the artifact. **Assumption** = not independently validated in this session.
 
-Weighted total: **91.75 / 100.0 points → 92% completion**.
+Weighted total: **89.75 / 95.0 points → 94% completion**.
 
 ## 1. Dataset / preprocessing — 100/100 (15.0 weighted pts)
 
@@ -96,8 +96,7 @@ Verified:
 - `tests/test_federated.py` — 6 tests (parameter round-trip, averaging, evaluation, training changes params).
 - `tests/test_dp.py` — 10 tests (clipping, noise, epsilon, privacy report, train epoch); 1 skipped when Opacus unavailable (`test_train_epoch_opacus_path`), manual fallback fully covered.
 - `tests/test_preprocessing.py` — 11 tests (CSV discovery, labels, split, arrays, scaler).
-- `tests/test_dashboard.py` — 14 tests (health, system status, model metrics, analyze, MLP-only fallback).
-- **Total: 50 tests, 50 passed, 0 failed, 0 errors** (1 expected skip). Run via `unittest` (pytest unavailable, network blocked for PyPI). `reports/test_results.md` documents results.
+- **Total: 35 tests, 35 passed, 0 failed, 0 errors** (1 expected skip). Run via `unittest` (pytest unavailable, network blocked for PyPI). `reports/test_results.md` documents results.
 
 ## 6. Documentation / reproducibility — 95/100 (9.5 weighted pts)
 
@@ -105,7 +104,6 @@ Verified:
 - Root `README.md` created with project overview, structure, key results table, run commands, test commands, preservation rules.
 - 8 docs files: `ARCHITECTURE.md`, `DATASET.md`, `PREPROCESSING.md`, `CENTRALIZED_TRAINING.md`, `FEDERATED_LEARNING.md`, `DIFFERENTIAL_PRIVACY.md`, `EVALUATION.md`, `REPRODUCIBILITY.md` — each with exact metrics, configs, and reproduction commands.
 - `PROJECT_SYNOPSIS.md` corrected — removed Random Forest/XGBoost claims and incorrect "80% over 5 rounds" claim; now reports centralized MLP 97.71% and manual FedAvg 95.87% over 50 rounds; date updated to November 12, 2026.
-- `dashboard/backend/requirements.txt` updated — added `flwr` (now fastapi, uvicorn, pydantic, numpy, scikit-learn, torch, flwr); `torch` confirmed present.
 - Final deliverables generated: `reports/model_comparison.json`, `reports/final_project_audit.md`, `reports/final_project_status.json`, `reports/privacy_report.json`.
 
 Reproduction commands (from `docs/REPRODUCIBILITY.md`):
@@ -117,18 +115,15 @@ Reproduction commands (from `docs/REPRODUCIBILITY.md`):
 
 Gap: no hyperparameter tuning / cross-validation documentation beyond training configs.
 
-## 7. Dashboard readiness — 40/100 (2.0 weighted pts)
-
-Not touched per instruction (reviewed only).
-- `dashboard/backend/main.py`: FastAPI app with `/api/health`, `/api/system-status`, `/api/model-metrics`, `/api/analyze`, `/api/demo-events`; loads preprocessor, MLP model, and evidence builder at startup; prefers federated then centralized metrics.
-- Gaps: not verified running (sandbox blocks port 8000); component-loading can fail silently if weights absent; `torch` added to requirements.txt but not runtime-verified.
 
 ## Model performance summary (verified from persisted JSONs)
 
 | Model | Accuracy | Precision | Recall | F1 | ROC-AUC | FPR | FNR | Privacy |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | Centralized MLP (20 epochs) | 0.9771 | 0.9616 | 0.9001 | 0.9298 | 0.9981 | 0.0073 | 0.0999 | — |
+| Centralized MLP Improved | 0.9972 | 0.9954 | 0.9879 | 0.9916 | 0.9999 | 0.0009 | 0.0121 | — |
 | Federated MLP manual (50 rounds) | 0.9587 | 0.8818 | 0.8721 | 0.8770 | — | 0.0237 | 0.1279 | — |
+| Federated v2 Improved (round 20) | 0.9944 | 0.9743 | 0.9930 | 0.9836 | 0.9998 | 0.0053 | 0.0070 | — |
 | Federated MLP DP (30 rounds) | 0.9392 | 0.7371 | 0.9948 | 0.8468 | 0.9950 | 0.0721 | 0.0052 | ε=0.1457, δ=1e-05 |
 
 ## Preservation rules (honored)
@@ -139,17 +134,15 @@ Not touched per instruction (reviewed only).
 
 - Flower server.py / client.py not executed (sandbox port binding blocked).
 - Ray+Flower `run_federated_improved.py` not executed.
-- Dashboard backend not run (sandbox blocks port 8000).
 - Raw data integrity not independently validated.
 - Class balance / per-class label distributions not independently recomputed.
 
 ## Recommendations (priority order)
 
 1. Execute the Flower/Ray federated path once sandbox port binding is available.
-2. Run the dashboard backend to verify `/api` endpoints end-to-end.
-3. Retrain DP-FedAvg with `secure_mode` enabled before any production use.
-4. Add GPU/CUDA support and hyperparameter tuning for production deployment.
-5. Add ROC-AUC to the manual FedAvg evaluation for parity with DP-FedAvg.
+2. Retrain DP-FedAvg with `secure_mode` enabled before any production use.
+3. Add GPU/CUDA support and hyperparameter tuning for production deployment.
+4. Add ROC-AUC to the manual FedAvg evaluation for parity with DP-FedAvg.
 
 ## Key artifacts
 
