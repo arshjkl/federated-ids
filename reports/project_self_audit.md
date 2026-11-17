@@ -2,7 +2,7 @@
 
 **Audit date:** 2026-11-12
 **Scope:** `src/`, `models/`, `data/`, `dashboard/backend/`, project documentation
-**Out of scope:** `src/ids_laya/` (Laya) — not touched; `dashboard/` frontend — not touched per instruction
+**Out of scope:** `dashboard/` frontend — not touched per instruction
 
 ## Executive summary
 
@@ -94,7 +94,7 @@ Gaps (significant):
 ## 7. Dashboard readiness — 40/100 (2.0 weighted pts)
 
 Not touched per instruction (reviewed only).
-- `dashboard/backend/main.py`: FastAPI app with `/api/health`, `/api/system-status`, `/api/model-metrics`, `/api/analyze`, `/api/demo-events`; loads preprocessor, MLP model, Laya engine, and evidence builder at startup; prefers federated then centralized metrics.
+- `dashboard/backend/main.py`: FastAPI app with `/api/health`, `/api/system-status`, `/api/model-metrics`, `/api/analyze`, `/api/demo-events`; loads preprocessor, MLP model, and evidence builder at startup; prefers federated then centralized metrics.
 - Gaps: `requirements.txt` missing `torch` and `flwr`; not verified running (sandbox blocks port 8000); component-loading can fail silently if weights absent.
 
 ## Model performance summary (verified from persisted JSONs)
@@ -134,6 +134,3 @@ Not touched per instruction (reviewed only).
 4. Add `torch` and `flwr` to `dashboard/backend/requirements.txt`; add a root `README.md` with run/reproduce instructions.
 5. Add ROC-AUC to federated evaluation; consider GPU/CUDA support and hyperparameter tuning.
 
-## Laya (`src/ids_laya/`) and dashboard (`dashboard/`)
-
-Out of scope per instruction — neither was touched or audited in depth. The dashboard backend integrates the IDS model and Laya engine but was not executed.
