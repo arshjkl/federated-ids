@@ -2,7 +2,7 @@
 
 **Project:** Privacy-Preserving Federated Intrusion Detection System (IDS)  
 **Dataset:** CIC-IDS2017  
-**Last updated:** November 13, 2026  
+**Last updated:** November 17, 2026  
 **Scope:** Federated ML pipeline only  
 
 ## Overview
@@ -30,7 +30,7 @@ All components are verified end-to-end with persisted checkpoints, results JSON,
 | Centralized MLP (improved) | ImprovedMLPIDS + weighted BCE/focal loss + ReduceLROnPlateau + early stopping + threshold optimization |
 | Manual FedAvg | 50 rounds, 5 clients, Dirichlet α=0.5 non-IID, local_epochs=5, batch 128, lr=0.001, sample-weighted aggregation |
 | Improved FedAvg | FedAvg + ImprovedMLPIDS + weighted BCE + per-client LR scheduling + threshold optimization |
-| FedProx | FedAvg with proximal term mu * ||w - w_global||^2 to reduce client drift |
+| FedProx | FedAvg with proximal term mu * \|\|w - w_global\|\|^2 to reduce client drift |
 | DP-FedAvg | DP-SGD via Opacus 1.6.0; per-example gradient clipping + Gaussian noise; moments-accountant privacy accounting |
 | Improved DP-FedAvg | DP-FedAvg + correct batch-level privacy accounting + ImprovedMLPIDS + weighted BCE + threshold optimization |
 | DP-FedProx | DP-FedAvg with proximal term (mu) + DP-SGD |
@@ -46,6 +46,16 @@ All components are verified end-to-end with persisted checkpoints, results JSON,
 | Recall | 90.01% | 87.21% | 99.48% |
 | F1-score | 92.98% | 87.70% | 84.68% |
 | ROC-AUC | 99.81% | — | 99.50% |
+| FPR | 0.73% | 2.37% | 7.21% |
+| FNR | 9.99% | 12.79% | 0.52% |
+
+### Confusion Matrices (Test Set: 504,473 samples)
+
+| Model | True Negative | False Positive | False Negative | True Positive |
+|---|---|---|---|---|
+| Centralized MLP | 416,238 | 3,059 | 8,512 | 76,664 |
+| Manual FedAvg | 409,343 | 9,954 | 10,891 | 74,285 |
+| DP-FedAvg | 389,079 | 30,218 | 445 | 84,731 |
 
 ### Improved Variants (ImprovedMLPIDS: 256→128→64→32, residual blocks, LayerNorm, FocalLoss, LR scheduling, threshold optimization)
 

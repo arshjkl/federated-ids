@@ -19,11 +19,19 @@ This project implements an end-to-end privacy-preserving federated intrusion det
 
 ### Baselines
 
-| Model | Accuracy | Precision | Recall | F1 | ROC-AUC |
-|---|---|---|---|---|---|
-| Centralized MLP (20 epochs) | 97.71% | 96.16% | 90.01% | 92.98% | 99.81% |
-| Manual FedAvg (50 rounds) | 95.87% | 88.18% | 87.21% | 87.70% | — |
-| DP-FedAvg (30 rounds) | 93.92% | 73.71% | 99.48% | 84.68% | 99.50% |
+| Model | Accuracy | Precision | Recall | F1 | ROC-AUC | FPR | FNR |
+|---|---|---|---|---|---|---|---|
+| Centralized MLP (20 epochs) | 97.71% | 96.16% | 90.01% | 92.98% | 99.81% | 0.73% | 9.99% |
+| Manual FedAvg (50 rounds) | 95.87% | 88.18% | 87.21% | 87.70% | — | 2.37% | 12.79% |
+| DP-FedAvg (30 rounds) | 93.92% | 73.71% | 99.48% | 84.68% | 99.50% | 7.21% | 0.52% |
+
+### Confusion Matrices (Test Set: 504,473 samples)
+
+| Model | True Negative | False Positive | False Negative | True Positive |
+|---|---|---|---|---|
+| Centralized MLP | 416,238 | 3,059 | 8,512 | 76,664 |
+| Manual FedAvg | 409,343 | 9,954 | 10,891 | 74,285 |
+| DP-FedAvg | 389,079 | 30,218 | 445 | 84,731 |
 
 ### Improved Variants (ImprovedMLPIDS: 256→128→64→32, residual, LayerNorm, FocalLoss, threshold optimization)
 
@@ -34,7 +42,7 @@ This project implements an end-to-end privacy-preserving federated intrusion det
 
 Baseline results in `models/centralized_mlp_results.json`, `models/manual_federated_improved_results.json`, `models/dp_federated_results.json`. Improved checkpoints: `models/centralized_mlp_improved.pth`, `models/checkpoints/federated_v2_round_20.pth`.
 
-## Repository structure
+## Repository Structure
 
 ```
 federated-ids/
@@ -60,14 +68,14 @@ federated-ids/
 │   ├── federated/
 │   │   ├── run_manual_federated.py   # Manual FedAvg (50 rounds) + improved + FedProx
 │   │   ├── run_dp_federated.py       # DP-FedAvg (30 rounds) + improved + DP-FedProx
-│   │   └── run_comparison.py         # NEW: all-variants comparison runner
+│   │   └── run_comparison.py         # All-variants comparison runner
 │   ├── privacy/dp_sgd.py             # DP-SGD trainer + privacy accounting (+ batches_per_epoch)
 │   └── utils/explore_dataset.py
 ├── tests/
 │   ├── test_mlp.py
 │   ├── test_federated.py
 │   ├── test_dp.py
-│   ├── test_improved.py              # NEW: improved MLP, losses, FedProx, threshold, privacy
+│   ├── test_improved.py              # Improved MLP, losses, FedProx, threshold, privacy
 │   └── test_preprocessing.py
 ├── validate_centralized.py # Centralized validation script
 └── .venv/                # Python env (torch 2.14.0, opacus 1.6.0)
@@ -90,9 +98,9 @@ source .venv/bin/activate  # Linux/macOS
 pip install -r requirements.txt
 ```
 
-## Run the pipeline (full commands)
+## Run the Pipeline (Full Commands)
 
-### 1. Preprocess the CIC-IDS2017 dataset
+### 1. Preprocess the CIC-IDS2017 Dataset
 
 ```bash
 PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python src/data/preprocessing_validation.py
@@ -100,7 +108,7 @@ PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python src/data/preproce
 
 This loads the raw CSVs, cleans labels, converts to binary (BENIGN=0, ATTACK=1), applies stratified train/test split, fits `StandardScaler` on training data only, and saves processed arrays + scaler to `data/processed/`.
 
-### 2. Train centralized MLP baseline
+### 2. Train Centralized MLP Baseline
 
 ```bash
 PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python src/models/train_centralized.py
@@ -108,13 +116,13 @@ PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python src/models/train_
 
 Trains for 20 epochs, saves `models/centralized_mlp.pth` and `models/centralized_mlp_results.json`.
 
-### 3. Run centralized validation
+### 3. Run Centralized Validation
 
 ```bash
 PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python validate_centralized.py
 ```
 
-### 4. Run Manual FedAvg (50 rounds)
+### 4. Run Manual FedAvg (50 Rounds)
 
 ```bash
 PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python src/federated/run_manual_federated.py
@@ -122,7 +130,7 @@ PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python src/federated/run
 
 Trains 50 rounds with 5 clients, warm-started from the centralized checkpoint. Saves `models/federated_mlp_manual.pth`, `models/manual_federated_improved_results.json`, and per-round checkpoints.
 
-### 5. Run DP-FedAvg (30 rounds)
+### 5. Run DP-FedAvg (30 Rounds)
 
 ```bash
 PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python src/federated/run_dp_federated.py
@@ -130,7 +138,7 @@ PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python src/federated/run
 
 Trains 30 rounds with DP-SGD (noise_multiplier=1.0, max_grad_norm=1.0, delta=1e-05). Saves `models/federated_mlp_dp.pth`, `models/dp_federated_results.json`, and `reports/privacy_report.json`.
 
-### 6. Run improved variants (all models)
+### 6. Run Improved Variants (All Models)
 
 ```bash
 PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python src/federated/run_comparison.py
@@ -138,7 +146,7 @@ PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python src/federated/run
 
 Runs Centralized (baseline + improved), FedAvg (baseline + improved), FedProx, DP-FedAvg (baseline + improved), DP-FedProx under identical data/seed conditions. Writes `models/model_comparison_improved.json` and prints a side-by-side table.
 
-### 7. Run individual improved variants
+### 7. Run Individual Improved Variants
 
 Centralized improved:
 ```bash
@@ -152,10 +160,10 @@ PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python -c "from src.fede
 
 Improved DP-FedAvg / DP-FedProx:
 ```bash
-PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python -c "from src.federated.run_dp_federated import run_dp_federated_improved, run_dp_federated_prox; run_dp_federated_improved(); run_dp_federated_prox()"
+PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python -c "from src.federated.run_dp_federated import run_dp_federated_improved, run_dp_federated_prox; run_dp_fedrated_improved(); run_dp_federated_prox()"
 ```
 
-### Expected order
+### Expected Order
 
 Run steps 1 → 2 → 4 → 5 in order (step 3 is optional validation). Steps 4, 5, and 6 all warm-start from the centralized checkpoint produced in step 2. Step 6 runs all improved variants in one go.
 
@@ -185,3 +193,5 @@ See `docs/` for per-component details:
 ## Notes
 
 - All model files are under GitHub's 100MB per-file limit.
+- Network is blocked for PyPI in this environment — dependencies must be pre-installed in `.venv`.
+- Dashboard runs on ports 3000 (frontend) and 18003 (backend).

@@ -477,34 +477,34 @@ export function Experiments() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-xs text-dark-500">Name</p>
-                <p className="text-dark-50">{viewExperiment.name}</p>
+                <p className="text-dark-50">{viewExperiment?.name}</p>
               </div>
               <div>
                 <p className="text-xs text-dark-500">Algorithm</p>
-                <p className="text-dark-50">{viewExperiment.algorithm}</p>
+                <p className="text-dark-50">{viewExperiment?.algorithm}</p>
               </div>
               <div>
                 <p className="text-xs text-dark-500">Status</p>
-                <p className="text-dark-50">{viewExperiment.status}</p>
+                <p className="text-dark-50">{viewExperiment?.status}</p>
               </div>
               <div>
                 <p className="text-xs text-dark-500">Round</p>
-                <p className="text-dark-50">{viewExperiment.current_round} / {viewExperiment.total_rounds}</p>
+                <p className="text-dark-50">{viewExperiment?.current_round} / {viewExperiment?.total_rounds}</p>
               </div>
             </div>
-            {viewExperiment.description && (
+            {viewExperiment?.description && (
               <div>
                 <p className="text-xs text-dark-500">Description</p>
-                <p className="text-dark-300">{viewExperiment.description}</p>
+                <p className="text-dark-300">{viewExperiment?.description}</p>
               </div>
             )}
             <div>
               <p className="text-xs text-dark-500">Organisations</p>
-              <p className="text-dark-300 text-sm">{viewExperiment.participating_orgs.length}</p>
+              <p className="text-dark-300 text-sm">{viewExperiment?.participating_orgs.length}</p>
             </div>
             <div>
               <p className="text-xs text-dark-500">Created</p>
-              <p className="text-dark-300 text-sm">{viewExperiment.created_at}</p>
+              <p className="text-dark-300 text-sm">{viewExperiment?.created_at}</p>
             </div>
           </div>
           <div className="p-4 border-t border-dark-700 flex justify-end">
