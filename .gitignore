@@ -26,3 +26,20 @@ package-lock.json
 
 # OS
 .DS_Store
+
+# Local database
+*.db
+
+# Frontend cache
+frontend/.vite/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Environment variables
+.env
+.env.*
+!.env.example
