@@ -1,159 +1,135 @@
-# Deployment Guide: Vercel (Frontend) & Railway (Backend) with GitHub
+# Complete Deployment Guide: Vercel (Frontend) + Render / Railway / Koyeb (Backend)
 
-This guide documents the complete process for deploying the **Federated Intrusion Detection System (Federated IDS)** to **Vercel** (React SPA dashboard) and **Railway** (FastAPI ML & Federated Training Backend) using **GitHub**.
+This guide documents how to deploy the **Federated Intrusion Detection System (Federated IDS)** using GitHub.
 
----
-
-## 1. Architecture & Deployment Topology
-
-```
-┌────────────────────────────────┐         HTTPS / WSS          ┌────────────────────────────────┐
-│         Vercel (Edge)          │ ───────────────────────────> │        Railway (Cloud)         │
-│  React 18 + Vite Dashboard     │                              │   FastAPI + PyTorch Backend    │
-│  SPA Routing (`vercel.json`)   │ <─────────────────────────── │   `uvicorn --port ${PORT}`     │
-└────────────────────────────────┘                              └────────────────────────────────┘
-                 │                                                               │
-                 │ Git Push to GitHub                                            │ Railway PostgreSQL / SQLite
-                 ▼                                                               ▼
-┌────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                   GitHub Repository                                            │
-│  /frontend  ───────────> Root Directory for Vercel Project                                     │
-│  /          ───────────> Root Directory for Railway Project (`Dockerfile` & `railway.json`)   │
-└────────────────────────────────────────────────────────────────────────────────────────────────┘
-```
+- **Frontend Dashboard**: Deployed on **Vercel** (Global Edge React 18 SPA).
+- **Backend ML & Training Engine**: Deployed on **Render** (Recommended Free Railway Alternative) or **Railway** / **Koyeb**.
 
 ---
 
-## 2. Railway Deployment (Backend API & Training Engine)
+## Architecture & Topology
 
-Railway deploys the FastAPI backend using Docker with automatic port binding, background training, and PyTorch inference.
+```
+┌────────────────────────────────┐         HTTPS / WSS          ┌──────────────────────────────────────────────┐
+│         Vercel (Edge)          │ ───────────────────────────> │     Render / Railway / Koyeb (Cloud)         │
+│  React 18 + Vite Dashboard     │                              │        FastAPI + PyTorch Backend             │
+│  SPA Routing (`vercel.json`)   │ <─────────────────────────── │         `uvicorn --port ${PORT}`             │
+└────────────────────────────────┘                              └──────────────────────────────────────────────┘
+                 │                                                                     │
+                 │ Git Push to GitHub                                                  │ PostgreSQL / SQLite
+                 ▼                                                                     ▼
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                       GitHub Repository: arshjkl/federated-ids                               │
+│  /frontend  ───────────> Root Directory for Vercel Project (`vercel.json`)                                   │
+│  /          ───────────> Root Directory for Backend (`Dockerfile`, `render.yaml`, `railway.json`)           │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
 
-### Step 2.1 — Connect GitHub Repository to Railway
-1. Log in to [Railway](https://railway.app/).
-2. Click **New Project** $\rightarrow$ **Deploy from GitHub repo**.
-3. Select this repository.
-4. Railway will automatically detect `railway.json` and `Dockerfile` in the root directory.
+---
 
-### Step 2.2 — Configure Environment Variables on Railway
-In Railway under **Project Settings $\rightarrow$ Variables**, configure:
+## OPTION A (Recommended Alternative): Deploy Backend on Render (100% Free)
 
-| Variable | Recommended Value | Description |
+[Render](https://render.com/) is the top free alternative to Railway. It natively supports Docker, custom ports (`$PORT`), FastAPI, WebSockets (`wss://`), and persistent databases.
+
+### Step 1: Sign up & Connect GitHub
+1. Go to **[render.com](https://render.com/)** and sign in with GitHub.
+2. In the Render Dashboard, click **New +** $\rightarrow$ select **Web Service**.
+3. Under *Connect a repository*, choose **`arshjkl/federated-ids`**.
+
+### Step 2: Configure Service Settings
+Fill in the configuration:
+- **Name**: `federated-ids-backend`
+- **Region**: Choose the closest to you (e.g., `Oregon (US West)` or `Frankfurt (EU)`)
+- **Language / Runtime**: **Docker** *(Render detects the root `Dockerfile` automatically)*
+- **Instance Type**: **Free**
+
+### Step 3: Add Environment Variables in Render
+Scroll down to the **Environment Variables** section and add:
+
+| Key | Value | Description |
 |---|---|---|
-| `PORT` | *(Provided automatically by Railway)* | Dynamic HTTP port |
-| `DATABASE_URL` | `postgresql+asyncpg://...` or `sqlite+aiosqlite:///./federated_ids.db` | Auto-converts Railway PostgreSQL `postgres://` URLs to async |
-| `CORS_ORIGINS` | `https://your-app.vercel.app,http://localhost:3000` | Allowed origins for API and WebSocket connections |
-| `DB_ECHO` | `false` | Disable verbose SQL query logging in production |
-| `PYTHONUNBUFFERED` | `1` | Ensures real-time console and training logs |
+| `PORT` | `10000` | Port for the FastAPI server |
+| `DATABASE_URL` | `sqlite+aiosqlite:///./federated_ids.db` | Default SQLite or Render Postgres URL |
+| `CORS_ORIGINS` | `*` | Allows your Vercel frontend domain |
+| `PYTHONUNBUFFERED` | `1` | Stream real-time training and inference logs |
 
-### Step 2.3 — Add PostgreSQL (Optional)
-If you want persistent managed cloud database storage rather than SQLite:
-1. In your Railway project, click **New** $\rightarrow$ **Database** $\rightarrow$ **PostgreSQL**.
-2. Railway provides `DATABASE_URL`. The backend automatically converts `postgres://` to `postgresql+asyncpg://` on startup in `src/dashboard/db/session.py`.
-3. Tables and default organisations are automatically seeded on startup via `lifespan()`.
+*(Alternatively, you can click **New +** $\rightarrow$ **Blueprint** and Render will automatically configure everything from the included `render.yaml`!)*
 
-### Step 2.4 — Verify Backend Health
-Once deployed, open Railway's generated domain (e.g. `https://federated-ids-production.up.railway.app`):
-```bash
-curl https://your-backend.up.railway.app/api/health
-```
-Response:
-```json
-{"status":"healthy","timestamp":"2026-11-21T...","version":"1.0.0"}
-```
+### Step 4: Health Check & Deploy
+- **Health Check Path**: `/api/health`
+- Click **Create Web Service**.
+- Render will build the container, install dependencies, and launch your API at a public URL:
+  `https://federated-ids-backend-xxxx.onrender.com`
 
 ---
 
-## 3. Vercel Deployment (React Frontend Dashboard)
+## OPTION B: Deploy Backend on Koyeb (Fast Serverless MicroVMs)
 
-The frontend is a modern React 18 SPA styled with Tailwind CSS, utilizing `@tanstack/react-query`, `lucide-react`, and `recharts`.
+[Koyeb](https://www.koyeb.com/) is another excellent alternative offering generous free allowances, native Docker container support, and built-in global edge routing.
 
-### Step 3.1 — Create Vercel Project
-1. Log in to [Vercel](https://vercel.com/).
+1. Sign up on **[koyeb.com](https://www.koyeb.com/)** with GitHub.
+2. Click **Create App** $\rightarrow$ select **GitHub**.
+3. Pick **`arshjkl/federated-ids`**.
+4. In **Builder**, select **Dockerfile**.
+5. In **Environment Variables**, set:
+   - `CORS_ORIGINS` = `*`
+   - `PYTHONUNBUFFERED` = `1`
+6. Click **Deploy**. Koyeb will output your public URL:
+   `https://federated-ids-xxxx.koyeb.app`
+
+---
+
+## OPTION C: Deploy Backend on Railway
+
+If you prefer Railway:
+1. Log in to [railway.app](https://railway.app/) with GitHub.
+2. Click **New Project** $\rightarrow$ **Deploy from GitHub repo** $\rightarrow$ Select `arshjkl/federated-ids`.
+3. In **Variables**, add `CORS_ORIGINS` = `*` and `PYTHONUNBUFFERED` = `1`.
+4. In **Settings** $\rightarrow$ **Networking**, click **Generate Domain**.
+
+---
+
+## Deploy Frontend to Vercel (React 18 Dashboard)
+
+Once your backend is running on **Render** (or Koyeb/Railway), deploy the frontend to Vercel and connect them:
+
+### Step 1: Create Vercel Project
+1. Log in to **[vercel.com](https://vercel.com/)** with GitHub.
 2. Click **Add New...** $\rightarrow$ **Project**.
-3. Import your GitHub repository.
+3. Select **`arshjkl/federated-ids`**.
 
-### Step 3.2 — Configure Build Settings
-In the Vercel project configuration:
+### Step 2: Configure Project Settings
 - **Framework Preset**: `Vite`
-- **Root Directory**: `frontend` *(Click Edit and select the `frontend` folder)*
+- **Root Directory**: Click **Edit** and choose **`frontend`**
 - **Build Command**: `npm run build`
 - **Output Directory**: `dist`
 - **Install Command**: `npm install`
 
-### Step 3.3 — Configure Environment Variables on Vercel
-In the Vercel **Environment Variables** panel, add:
+### Step 3: Set Backend Environment Variables in Vercel
+In the **Environment Variables** panel, add your backend URL (from Render, Koyeb, or Railway):
 
-| Variable | Example Value | Description |
-|---|---|---|
-| `VITE_API_URL` | `https://your-backend.up.railway.app` | Railway backend public URL |
-| `VITE_WS_URL` | `wss://your-backend.up.railway.app` | WebSocket endpoint for live training rounds & stages |
+| Variable Name | Value (Example with Render) |
+|---|---|
+| `VITE_API_URL` | `https://federated-ids-backend.onrender.com` |
+| `VITE_WS_URL` | `wss://federated-ids-backend.onrender.com` |
 
-> **Note on SPA Routing**: The included [frontend/vercel.json](file:///Users/admin/Desktop/federated-ids%202/frontend/vercel.json) automatically routes all browser navigation paths (`/inference`, `/experiments`, `/detections`, `/models`) to `index.html` to prevent 404 errors on browser refresh.
+> *Note: If using HTTP, Vercel will connect via `https://` and WebSocket via `wss://` automatically.*
 
----
-
-## 4. Datasets Included in the Repository
-
-All original mock datasets have been preserved and supplemented with the latest Kaggle intrusion datasets:
-
-1. **`data/mock/inference/kaggle_cybersecurity_intrusion_2025.csv`**:
-   - 9,537 network flow records with 9 features: `Network Packet Size`, `Protocol Type`, `Login Attempts`, `Session Duration`, `Encryption Used`, `IP Reputation Score`, `Failed Logins`, `Browser/User-Agent Anomaly`, `Intrusion Detected (Label)`.
-2. **`data/mock/inference/kaggle_unsw_nb15_cloud_ids_2025.csv`**:
-   - 2,000 cloud network flow records with 20 behavioral attributes.
-3. **`data/mock/inference/kaggle_threat_intel_malicious_ips.csv`**:
-   - 200 threat intelligence IP records.
-4. **Preserved Existing Mock Datasets**:
-   - `mock_inference_batch_01.csv` through `06.csv`
-   - `mock_cic_ids_5000_labelled.csv`
-   - `mock_cic_ids_5000.csv`
-   - `test_inference.csv`
+### Step 4: Click "Deploy"
+Vercel builds your React app and deploys it worldwide at `https://federated-ids-xxxx.vercel.app`.
+All pages (`/inference`, `/experiments`, `/detections`, `/models`) will work out of the box with zero 404 errors on refresh due to `frontend/vercel.json`.
 
 ---
 
-## 5. Universal Dataset Training in the Experiments Section
+## Verification & Testing After Deployment
 
-Users can train centralized or federated models on **any dataset** with an arbitrary schema:
-
-1. Navigate to **Experiments** $\rightarrow$ Click **New Experiment**.
-2. Select your algorithm (`Centralized Improved MLP`, `FedAvg`, `FedProx`, `DP-FedAvg`, `DP-FedProx`).
-3. Select **Training Dataset**:
-   - Choose any preloaded Kaggle dataset, OR
-   - Select any uploaded dataset uploaded through the dashboard.
-4. Select 1 organisation (for Centralized / single-tenant models) or 2+ organisations (for Federated consortium training).
-5. Click **Create** $\rightarrow$ Click **Start**.
-6. The backend PyTorch engine:
-   - Fits the `UniversalDatasetEncoder` on the dataset schema.
-   - Dynamically instantiates `CustomSchemaMLP(D)` for dimension $D$.
-   - Executes multi-round federated training with local client shards.
-   - Computes local & global loss, accuracy, precision, recall, and F1 score.
-   - Saves checkpoint in `models/custom_trained/exp_<id>_model.pth`.
-   - Registers a new active `GlobalModel` in the database.
-7. Click **Detect** on the completed experiment row to immediately launch adaptive inference using the trained model on similar-schema network data.
-
----
-
-## 6. Multi-Organisation Attribution in Detections & Inference
-
-- **Detections Page**:
-  - Displays a dedicated **Organisation** column showing which consortium member owned or ran each detection.
-  - Filter detections by specific organisation using the **All Organisations** dropdown filter.
-  - View detailed organisation attribution in the **Detection Details** investigation modal.
-- **Inference Page**:
-  - Run inference on behalf of any sponsoring organisation.
-  - Automated fallback ensures single-tenant and consortium detection jobs always carry valid organizational provenance.
-
----
-
-## 7. Verification Commands
-
-Test your local or staging setup before pushing:
-```bash
-# 1. Run Universal Dataset Pipeline test suite
-./.venv/bin/python -m unittest tests/test_universal_pipeline.py
-
-# 2. Build the production React frontend
-cd frontend && npm run build
-
-# 3. Test backend health
-curl http://localhost:18003/api/health
-```
+1. **Verify Backend Health**:
+   ```bash
+   curl https://<YOUR_BACKEND_URL>/api/health
+   # Returns: {"status":"healthy","database":"connected","version":"1.0.0"}
+   ```
+2. **Verify Frontend**:
+   Open your Vercel URL in your browser:
+   - **Inference**: Test running detection on any of the preloaded Kaggle datasets (`Kaggle Cybersecurity Intrusion 2025`, `UNSW-NB15`, etc.).
+   - **Experiments**: Train a model on any custom dataset with 1 or more organisations. Click **Detect** to run inference with the newly trained model!
+   - **Detections**: Filter detections by **Organisation** to verify multi-tenant isolation.
