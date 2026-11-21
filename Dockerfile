@@ -1,5 +1,5 @@
 # Production Dockerfile for Federated IDS FastAPI Backend
-FROM python:3.10-slim
+FROM python:3.12-slim
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
