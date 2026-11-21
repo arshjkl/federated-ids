@@ -427,6 +427,7 @@ class AdaptiveInferencePipeline:
         manual_overrides: Optional[Dict[str, str]] = None,
         threshold: float = 0.50,
         batch_size: int = 512,
+        max_rows: Optional[int] = None,
         stage_callback: Optional[Callable[[StageTelemetry], None]] = None,
     ) -> PipelineExecutionReport:
         """
@@ -470,7 +471,7 @@ class AdaptiveInferencePipeline:
         # Stage 1: Dataset Ingestion
         t0 = time.perf_counter()
         try:
-            df, meta = self.ingestion_engine.load_dataframe(file_path)
+            df, meta = self.ingestion_engine.load_dataframe(file_path, max_rows=max_rows)
             if len(df) == 0:
                 _finish_stage(
                     "dataset_ingestion", t0, "failed", 0, 0,

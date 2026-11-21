@@ -1068,6 +1068,7 @@ async def run_inference_on_dataset(
     name: str = Form(...),
     threshold: float = Form(0.5),
     batch_size: int = Form(256),
+    max_rows: int = Form(2000),
     detection_mode: Optional[str] = Form(None),
     manual_overrides: Optional[str] = Form(None),
     db: AsyncSession = Depends(get_db),
@@ -1105,6 +1106,7 @@ async def run_inference_on_dataset(
         config=InferenceConfig(
             threshold=threshold,
             batch_size=batch_size,
+            max_rows=max_rows,
             detection_mode=detection_mode,
             manual_overrides=overrides_dict,
         ).model_dump(),
@@ -1412,6 +1414,7 @@ async def _run_inference_from_path(
     detection_mode: Optional[str] = None,
     manual_overrides: Optional[Dict[str, str]] = None,
     organisation_id: Optional[uuid.UUID] = None,
+    max_rows: int = 2000,
 ) -> InferenceJobDetail:
     """Common adaptive inference logic for both file upload and sample data."""
     if model_id is None:
@@ -1477,6 +1480,7 @@ async def _run_inference_from_path(
         config=InferenceConfig(
             threshold=threshold,
             batch_size=batch_size,
+            max_rows=max_rows,
             detection_mode=detection_mode,
             manual_overrides=manual_overrides,
         ).model_dump(),

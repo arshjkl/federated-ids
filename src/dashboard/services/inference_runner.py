@@ -78,6 +78,7 @@ class InferenceRunner:
             job_cfg = dict(job.config) if isinstance(job.config, dict) else {}
             threshold = float(job_cfg.get("threshold", 0.5))
             batch_size = int(job_cfg.get("batch_size", 512))
+            max_rows = int(job_cfg.get("max_rows", 2000))
             mode_req = requested_mode or job_cfg.get("detection_mode")
             overrides = manual_overrides or job_cfg.get("manual_overrides")
 
@@ -91,6 +92,7 @@ class InferenceRunner:
                 manual_overrides=overrides,
                 threshold=threshold,
                 batch_size=batch_size,
+                max_rows=max_rows,
             )
 
             if report.status == "failed":
@@ -101,7 +103,7 @@ class InferenceRunner:
                 raise ValueError(job.error_message)
 
             # Load source dataframe for storing compact per-record feature snapshots
-            df_raw, _ = self.pipeline.ingestion_engine.load_dataframe(dataset.file_path)
+            df_raw, _ = self.pipeline.ingestion_engine.load_dataframe(dataset.file_path, max_rows=max_rows)
 
             # Persist full pipeline report JSON to disk
             RESULTS_DIR.mkdir(parents=True, exist_ok=True)
