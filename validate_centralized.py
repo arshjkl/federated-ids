@@ -20,7 +20,7 @@ from sklearn.metrics import (
     roc_auc_score,
 )
 
-PROJECT_ROOT = "/Users/admin/Desktop/federated-ids"
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR = os.path.join(PROJECT_ROOT, "models")
 PROCESSED_DIR = os.path.join(PROJECT_ROOT, "data", "processed")
 REPORTS_DIR = os.path.join(PROJECT_ROOT, "reports")

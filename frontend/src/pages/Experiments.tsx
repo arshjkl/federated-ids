@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Search, Filter, Trash2, Eye, Play, Pause, Square, RefreshCw, X } from 'lucide-react'
+import { Plus, Search, Filter, Trash2, Eye, Play, Pause, Square, RefreshCw, X, Zap, Database, Building2 } from 'lucide-react'
 import { clsx } from 'clsx'
 import { toast } from 'react-hot-toast'
-import { useExperiments, useOrganisations } from '@/hooks/useDashboard'
+import { useExperiments, useOrganisations, useDatasets } from '@/hooks/useDashboard'
 import { api } from '@/services/api'
 import { format } from 'date-fns'
 
@@ -20,6 +20,7 @@ interface Experiment {
   created_at: string
   started_at?: string
   completed_at?: string
+  config?: Record<string, any>
 }
 
 interface Organisation {
@@ -28,6 +29,7 @@ interface Organisation {
 }
 
 const ALGORITHMS = [
+  { value: 'centralized', label: 'Centralized Improved MLP' },
   { value: 'fedavg', label: 'FedAvg' },
   { value: 'fedprox', label: 'FedProx' },
   { value: 'dp_fedavg', label: 'DP-FedAvg' },
@@ -37,6 +39,7 @@ const ALGORITHMS = [
 export function Experiments() {
   const { data: experiments, isLoading: expsLoading, refetch: refetchExperiments } = useExperiments()
   const { data: organisations } = useOrganisations()
+  const { data: registeredDatasets } = useDatasets()
 
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [creating, setCreating] = useState(false)
@@ -45,61 +48,84 @@ export function Experiments() {
     name: '',
     description: '',
     algorithm: 'fedavg',
-    total_rounds: 10,
+    total_rounds: 5,
+    sample_file: 'kaggle_cybersecurity_intrusion_2025.csv',
+    dataset_id: '',
+    target_column: '',
     config: {
-      local_epochs: 5,
+      local_epochs: 2,
       batch_size: 128,
-      learning_rate: 0.001,
+      learning_rate: 0.003,
       max_samples_per_client: 100000,
       fedprox_mu: 0.01,
-      dp_noise_multiplier: 1.0,
+      dp_noise_multiplier: 0.35,
       dp_max_grad_norm: 1.0,
       dp_delta: 0.00001,
       secure_aggregation: false,
       client_sampling_fraction: 1.0,
-      checkpoint_interval: 10,
+      checkpoint_interval: 5,
     },
     participating_org_ids: [] as string[],
   })
 
   useEffect(() => {
-    setCreateForm((prev) => ({ ...prev, participating_org_ids: [] }))
-  }, [])
+    if (organisations && organisations.length > 0 && createForm.participating_org_ids.length === 0) {
+      setCreateForm((prev) => ({
+        ...prev,
+        participating_org_ids: organisations.slice(0, 2).map((o: any) => o.id),
+      }))
+    }
+  }, [organisations])
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (createForm.participating_org_ids.length < 2) {
-      toast.error('Select at least 2 organisations')
+    if (createForm.participating_org_ids.length < 1) {
+      toast.error('Select at least 1 sponsoring organisation')
       return
     }
     setCreating(true)
     try {
-      const payload = {
-        ...createForm,
+      const payload: any = {
+        name: createForm.name,
+        description: createForm.description,
+        algorithm: createForm.algorithm,
+        total_rounds: createForm.total_rounds,
         participating_org_ids: createForm.participating_org_ids,
+        dataset_id: createForm.dataset_id || undefined,
+        sample_file: createForm.sample_file || undefined,
+        target_column: createForm.target_column || undefined,
+        config: {
+          ...createForm.config,
+          dataset_id: createForm.dataset_id || undefined,
+          sample_file: createForm.sample_file || undefined,
+          target_column: createForm.target_column || undefined,
+        },
       }
       await api.createExperiment(payload)
-      toast.success('Experiment created')
+      toast.success('Experiment created. Click Start to train on this dataset!')
       setShowCreateModal(false)
       setCreateForm({
         name: '',
         description: '',
         algorithm: 'fedavg',
-        total_rounds: 10,
+        total_rounds: 5,
+        sample_file: 'kaggle_cybersecurity_intrusion_2025.csv',
+        dataset_id: '',
+        target_column: '',
         config: {
-          local_epochs: 5,
+          local_epochs: 2,
           batch_size: 128,
-          learning_rate: 0.001,
+          learning_rate: 0.003,
           max_samples_per_client: 100000,
           fedprox_mu: 0.01,
-          dp_noise_multiplier: 1.0,
+          dp_noise_multiplier: 0.35,
           dp_max_grad_norm: 1.0,
           dp_delta: 0.00001,
           secure_aggregation: false,
           client_sampling_fraction: 1.0,
-          checkpoint_interval: 10,
+          checkpoint_interval: 5,
         },
-        participating_org_ids: [],
+        participating_org_ids: organisations ? organisations.slice(0, 2).map((o: any) => o.id) : [],
       })
       refetchExperiments()
     } catch (error: any) {
@@ -260,6 +286,19 @@ export function Experiments() {
                               Stop
                             </button>
                           )}
+                          {e.status === 'completed' && (
+                            <button
+                              onClick={() => {
+                                const mId = (e.config as any)?.trained_model_id
+                                window.location.href = mId ? `/inference?model_id=${mId}` : '/inference'
+                              }}
+                              className="px-3 py-1.5 text-xs bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 rounded-lg hover:bg-emerald-500/25 flex items-center gap-1 transition-colors"
+                              title="Run Inference with this trained model"
+                            >
+                              <Zap className="w-3 h-3 text-emerald-400" />
+                              Detect
+                            </button>
+                          )}
                           <button
                             className="px-3 py-1.5 text-xs bg-primary-500/10 text-primary-400 rounded-lg hover:bg-primary-500/20 flex items-center gap-1 transition-colors"
                             onClick={async () => {
@@ -298,25 +337,28 @@ export function Experiments() {
       <div
         className={clsx('fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm', showCreateModal ? '' : 'hidden')}
       >
-        <div className="w-full max-w-2xl bg-dark-900 border border-dark-700 rounded-xl overflow-hidden">
+        <div className="w-full max-w-2xl bg-dark-900 border border-dark-700 rounded-xl overflow-hidden max-h-[90vh] flex flex-col">
           <div className="p-4 border-b border-dark-700 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-dark-50">New Experiment</h2>
+            <div>
+              <h2 className="text-lg font-semibold text-dark-50">New Model Training Experiment</h2>
+              <p className="text-xs text-dark-400">Train Centralized or Federated models on any dataset schema for adaptive intrusion detection</p>
+            </div>
             <button
               onClick={() => setShowCreateModal(false)}
               className="p-2 rounded-lg text-dark-400 hover:text-dark-500 hover:bg-dark-800 transition-colors"
             >
-              <Eye className="w-5 h-5" />
+              <X className="w-5 h-5" />
             </button>
           </div>
-          <form onSubmit={handleCreate} className="p-6 space-y-6">
+          <form onSubmit={handleCreate} className="p-6 space-y-6 overflow-y-auto flex-1">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-dark-300">Name</label>
+                <label className="text-sm font-medium text-dark-300">Experiment Name</label>
                 <input
                   type="text"
                   value={createForm.name}
                   onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                  placeholder="Experiment name"
+                  placeholder="e.g. Kaggle 2025 Intrusion FedAvg"
                   className="w-full px-4 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-50 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                   required
                 />
@@ -335,6 +377,38 @@ export function Experiments() {
                   ))}
                 </select>
               </div>
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-medium text-dark-300 flex items-center gap-2">
+                  <Database className="w-4 h-4 text-primary-400" />
+                  Training Dataset (Any Schema / Format)
+                </label>
+                <select
+                  value={createForm.sample_file ? createForm.sample_file : (createForm.dataset_id ? `ds:${createForm.dataset_id}` : '')}
+                  onChange={(e) => {
+                    const val = e.target.value
+                    if (val.startsWith('ds:')) {
+                      setCreateForm({ ...createForm, dataset_id: val.slice(3), sample_file: '' })
+                    } else {
+                      setCreateForm({ ...createForm, sample_file: val, dataset_id: '' })
+                    }
+                  }}
+                  className="w-full px-4 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-50 focus:border-primary-500 focus:outline-none"
+                >
+                  <optgroup label="Latest Kaggle & Benchmark Datasets">
+                    <option value="kaggle_cybersecurity_intrusion_2025.csv">Kaggle Cybersecurity Intrusion 2025 (9,537 rows)</option>
+                    <option value="kaggle_unsw_nb15_cloud_ids_2025.csv">Kaggle UNSW-NB15 Cloud IDS 2025 (2,000 rows)</option>
+                    <option value="kaggle_threat_intel_malicious_ips.csv">Kaggle Threat Intel Malicious IPs (200 rows)</option>
+                    <option value="mock_cic_ids_5000_labelled.csv">CIC-IDS2017 Labeled Benchmark (5,000 rows)</option>
+                  </optgroup>
+                  {registeredDatasets && registeredDatasets.length > 0 && (
+                    <optgroup label="Uploaded / Analyzed Datasets">
+                      {registeredDatasets.map((d: any) => (
+                        <option key={d.id} value={`ds:${d.id}`}>{d.name} ({d.total_rows || d.rows || 0} rows)</option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+              </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-dark-300">Total Rounds</label>
                 <input
@@ -342,12 +416,26 @@ export function Experiments() {
                   value={createForm.total_rounds}
                   onChange={(e) => setCreateForm({ ...createForm, total_rounds: parseInt(e.target.value) || 1 })}
                   min="1"
+                  max="30"
                   className="w-full px-4 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-50 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-dark-300">Participating Organisations (2+)</label>
-                <div className="max-h-48 overflow-y-auto border border-dark-700 rounded-lg p-2 bg-dark-800">
+                <label className="text-sm font-medium text-dark-300">Target / Label Column (Optional)</label>
+                <input
+                  type="text"
+                  value={createForm.target_column}
+                  onChange={(e) => setCreateForm({ ...createForm, target_column: e.target.value })}
+                  placeholder="Auto-detect (e.g. Label, attack, is_intrusion)"
+                  className="w-full px-4 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-50 placeholder:text-dark-500 focus:border-primary-500 focus:outline-none"
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-medium text-dark-300 flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-cyan-400" />
+                  Sponsoring / Participating Organisations (1+ for Centralized, 2+ for Federated)
+                </label>
+                <div className="max-h-36 overflow-y-auto border border-dark-700 rounded-lg p-2 bg-dark-800">
                   {(organisations || []).map((o: Organisation) => (
                     <label key={o.id} className="flex items-center gap-2 p-1.5 rounded hover:bg-dark-700 cursor-pointer">
                       <input
@@ -363,7 +451,7 @@ export function Experiments() {
                         }
                         className="rounded text-primary-500 focus:ring-primary-500"
                       />
-                      {o.name}
+                      <span className="text-dark-200 text-sm font-medium">{o.name}</span>
                     </label>
                   ))}
                   {(organisations?.length ?? 0) === 0 && (
@@ -456,67 +544,65 @@ export function Experiments() {
           </form>
         </div>
       </div>
-    </div>
-  )
 
-  {/* Experiment Details Modal */}
-  if (viewExperiment) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in">
-        <div className="w-full max-w-md bg-dark-900 border border-dark-700 rounded-xl overflow-hidden">
-          <div className="p-4 border-b border-dark-700 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-dark-50">Experiment Details</h2>
-            <button
-              onClick={() => setViewExperiment(null)}
-              className="p-2 rounded-lg text-dark-400 hover:text-dark-500 hover:bg-dark-800 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-          <div className="p-6 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+      {/* Experiment Details Modal */}
+      {viewExperiment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in">
+          <div className="w-full max-w-md bg-dark-900 border border-dark-700 rounded-xl overflow-hidden">
+            <div className="p-4 border-b border-dark-700 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-dark-50">Experiment Details</h2>
+              <button
+                onClick={() => setViewExperiment(null)}
+                className="p-2 rounded-lg text-dark-400 hover:text-dark-500 hover:bg-dark-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-dark-500">Name</p>
+                  <p className="text-dark-50">{viewExperiment?.name}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-dark-500">Algorithm</p>
+                  <p className="text-dark-50">{viewExperiment?.algorithm}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-dark-500">Status</p>
+                  <p className="text-dark-50">{viewExperiment?.status}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-dark-500">Round</p>
+                  <p className="text-dark-50">{viewExperiment?.current_round} / {viewExperiment?.total_rounds}</p>
+                </div>
+              </div>
+              {viewExperiment?.description && (
+                <div>
+                  <p className="text-xs text-dark-500">Description</p>
+                  <p className="text-dark-300">{viewExperiment?.description}</p>
+                </div>
+              )}
               <div>
-                <p className="text-xs text-dark-500">Name</p>
-                <p className="text-dark-50">{viewExperiment?.name}</p>
+                <p className="text-xs text-dark-500">Organisations</p>
+                <p className="text-dark-300 text-sm">{viewExperiment?.participating_orgs.length}</p>
               </div>
               <div>
-                <p className="text-xs text-dark-500">Algorithm</p>
-                <p className="text-dark-50">{viewExperiment?.algorithm}</p>
-              </div>
-              <div>
-                <p className="text-xs text-dark-500">Status</p>
-                <p className="text-dark-50">{viewExperiment?.status}</p>
-              </div>
-              <div>
-                <p className="text-xs text-dark-500">Round</p>
-                <p className="text-dark-50">{viewExperiment?.current_round} / {viewExperiment?.total_rounds}</p>
+                <p className="text-xs text-dark-500">Created</p>
+                <p className="text-dark-300 text-sm">{viewExperiment?.created_at}</p>
               </div>
             </div>
-            {viewExperiment?.description && (
-              <div>
-                <p className="text-xs text-dark-500">Description</p>
-                <p className="text-dark-300">{viewExperiment?.description}</p>
-              </div>
-            )}
-            <div>
-              <p className="text-xs text-dark-500">Organisations</p>
-              <p className="text-dark-300 text-sm">{viewExperiment?.participating_orgs.length}</p>
+            <div className="p-4 border-t border-dark-700 flex justify-end">
+              <button
+                onClick={() => setViewExperiment(null)}
+                className="px-4 py-2 bg-primary-500 text-dark-950 rounded-lg font-medium hover:bg-primary-400"
+              >
+                Close
+              </button>
             </div>
-            <div>
-              <p className="text-xs text-dark-500">Created</p>
-              <p className="text-dark-300 text-sm">{viewExperiment?.created_at}</p>
-            </div>
-          </div>
-          <div className="p-4 border-t border-dark-700 flex justify-end">
-            <button
-              onClick={() => setViewExperiment(null)}
-              className="px-4 py-2 bg-primary-500 text-dark-950 rounded-lg font-medium hover:bg-primary-400"
-            >
-              Close
-            </button>
           </div>
         </div>
-      </div>
-    )
-  }
+      )}
+    </div>
+  )
 }

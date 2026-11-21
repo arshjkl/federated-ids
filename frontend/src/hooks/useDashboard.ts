@@ -55,3 +55,14 @@ export function useInferenceJobs() {
     refetchInterval: 10000,
   });
 }
+
+export function useDatasets() {
+  return useQuery({
+    queryKey: ['datasets'],
+    queryFn: async () => {
+      const response = await api.getDatasets({ page_size: 100 });
+      return response.data.items;
+    },
+    refetchInterval: 30000,
+  });
+}

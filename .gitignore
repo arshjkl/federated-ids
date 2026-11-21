@@ -17,12 +17,17 @@ data/raw/
 data/processed/
 
 # Excluded from push per scope
-dashboard/
+/dashboard/
 
 # Frontend build / dependencies
 node_modules/
 dist/
+.vite/
 package-lock.json
 
 # OS
 .DS_Store
+
+# Temporary uploads and outputs
+artifacts/uploaded_datasets/
+artifacts/inference_results/

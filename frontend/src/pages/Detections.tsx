@@ -3,10 +3,10 @@
 import { useState, useCallback, useEffect, useMemo } from 'react'
 import { Search, Shield, Download, RefreshCw, Filter, X, ChevronLeft, ChevronRight,
   Eye, Calendar, Database, Brain,
-  CheckCircle, FileText, Settings, Zap } from 'lucide-react'
+  CheckCircle, FileText, Settings, Zap, Building2 } from 'lucide-react'
 import { clsx } from 'clsx'
 import { toast } from 'react-hot-toast'
-import { useInferenceJobs } from '@/hooks/useDashboard'
+import { useInferenceJobs, useModels, useDatasets, useOrganisations } from '@/hooks/useDashboard'
 import { api } from '@/services/api'
 import { format, parseISO, startOfDay, endOfDay } from 'date-fns'
 
@@ -14,6 +14,8 @@ interface InferenceJob {
   id: string
   name: string
   model_id: string
+  model_name?: string
+  model_version?: string
   dataset_id?: string
   status: string
   total_records?: number
@@ -30,12 +32,25 @@ interface DetectionRecord {
   probability: number
   confidence: number | null
   true_label: number | null
-  features: Record<string, number> | null
+  features: Record<string, any> | null
   timestamp: string
   job_name: string
   model_name: string | null
   model_version: string | null
   dataset_name: string | null
+  organisation_id?: string | null
+  organisation_name?: string | null
+  predicted_category?: string
+  supervised_probability?: number | null
+  anomaly_score?: number | null
+  rule_score?: number
+  risk_score?: number
+  severity?: string
+  detection_mode?: string
+  triggered_rules?: Array<{ rule_id: string; name: string; weight: number; evidence: string }>
+  explanation?: string
+  top_anomaly_features?: string[]
+  compatibility_score?: number
 }
 
 interface PaginatedResponse<T> {
@@ -69,6 +84,9 @@ const getPredictionLabel = (prediction: number) => {
 
 export function Detections() {
   const { data: jobs, refetch: refetchJobs } = useInferenceJobs()
+  const { data: registeredModels } = useModels()
+  const { data: registeredDatasets } = useDatasets()
+  const { data: organisations } = useOrganisations()
 
   // State
   const [detections, setDetections] = useState<DetectionRecord[]>([])
@@ -98,18 +116,36 @@ export function Detections() {
   const completedJobs = useMemo(() => jobs?.filter((j: InferenceJob) => j.status === 'completed') || [], [jobs])
   const uniqueModels = useMemo(() => {
     const models = new Map<string, string>()
+    if (Array.isArray(registeredModels)) {
+      registeredModels.forEach((m: any) => {
+        if (m?.id && m?.name) {
+          models.set(m.id, `${m.name} (${m.algorithm})`)
+        }
+      })
+    }
     completedJobs.forEach((job: InferenceJob) => {
-      models.set(job.model_id, `Model ${job.model_id.slice(0, 8)}...`)
+      if (job.model_id && !models.has(job.model_id)) {
+        models.set(job.model_id, job.model_name || `Model ${job.model_id.slice(0, 8)}...`)
+      }
     })
     return Array.from(models.entries()).map(([id, name]) => ({ id, name }))
-  }, [completedJobs])
+  }, [completedJobs, registeredModels])
   const uniqueDatasets = useMemo(() => {
     const datasets = new Map<string, string>()
+    if (Array.isArray(registeredDatasets)) {
+      registeredDatasets.forEach((d: any) => {
+        if (d?.id && d?.name) {
+          datasets.set(d.id, d.name)
+        }
+      })
+    }
     completedJobs.forEach((job: InferenceJob) => {
-      if (job.dataset_id) datasets.set(job.dataset_id, `Dataset ${job.dataset_id.slice(0, 8)}...`)
+      if (job.dataset_id && !datasets.has(job.dataset_id)) {
+        datasets.set(job.dataset_id, `Dataset ${job.dataset_id.slice(0, 8)}...`)
+      }
     })
     return Array.from(datasets.entries()).map(([id, name]) => ({ id, name }))
-  }, [completedJobs])
+  }, [completedJobs, registeredDatasets])
 
   // Summary stats
   const totalAnalyzed = totalCount || 0
@@ -127,6 +163,7 @@ export function Detections() {
         page_size: pageSize,
       }
 
+      if (filters.search) params.search = filters.search
       if (filters.model_id) params.model_id = filters.model_id
       if (filters.dataset_id) params.dataset_id = filters.dataset_id
       if (filters.organisation_id) params.organisation_id = filters.organisation_id
@@ -149,10 +186,10 @@ export function Detections() {
     }
   }, [filters, pageSize])
 
-  // Load initial data
+  // Reload detections whenever filters or pageSize change
   useEffect(() => {
     loadDetections(1)
-  }, [])
+  }, [loadDetections])
 
   // Handle date preset changes
   const handleDatePresetChange = (preset: FilterState['date_preset']) => {
@@ -195,8 +232,6 @@ export function Detections() {
 
   const handleSearch = (value: string) => {
     handleFilterChange('search', value)
-    // Debounced search would be better in production
-    setTimeout(() => loadDetections(1), 300)
   }
 
   const clearFilters = () => {
@@ -212,7 +247,6 @@ export function Detections() {
       end_date: '',
       date_preset: 'all',
     })
-    loadDetections(1)
   }
 
   const hasActiveFilters = filters.search || filters.model_id || filters.dataset_id ||
@@ -334,7 +368,7 @@ export function Detections() {
 
           <select
             value={filters.prediction}
-            onChange={(e) => { handleFilterChange('prediction', e.target.value); loadDetections(1); }}
+            onChange={(e) => handleFilterChange('prediction', e.target.value)}
             className="px-4 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-50 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[150px]"
           >
             <option value="all">All Predictions</option>
@@ -344,7 +378,7 @@ export function Detections() {
 
           <select
             value={filters.model_id}
-            onChange={(e) => { handleFilterChange('model_id', e.target.value); loadDetections(1); }}
+            onChange={(e) => handleFilterChange('model_id', e.target.value)}
             className="px-4 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-50 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[180px]"
           >
             <option value="">All Models</option>
@@ -355,12 +389,23 @@ export function Detections() {
 
           <select
             value={filters.dataset_id}
-            onChange={(e) => { handleFilterChange('dataset_id', e.target.value); loadDetections(1); }}
+            onChange={(e) => handleFilterChange('dataset_id', e.target.value)}
             className="px-4 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-50 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[180px]"
           >
             <option value="">All Datasets</option>
             {uniqueDatasets.map((d) => (
               <option key={d.id} value={d.id}>{d.name}</option>
+            ))}
+          </select>
+
+          <select
+            value={filters.organisation_id}
+            onChange={(e) => handleFilterChange('organisation_id', e.target.value)}
+            className="px-4 py-2 bg-dark-800 border border-dark-700 rounded-lg text-cyan-300 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 min-w-[180px]"
+          >
+            <option value="">All Organisations</option>
+            {(organisations || []).map((o: any) => (
+              <option key={o.id} value={o.id}>{o.name}</option>
             ))}
           </select>
 
@@ -481,20 +526,22 @@ export function Detections() {
               <tr className="border-b border-dark-700">
                 <th className="pb-3 font-medium text-dark-300 w-12">#</th>
                 <th className="pb-3 font-medium text-dark-300">Timestamp</th>
+                <th className="pb-3 font-medium text-dark-300">Organisation</th>
                 <th className="pb-3 font-medium text-dark-300">Job</th>
                 <th className="pb-3 font-medium text-dark-300">Model</th>
+                <th className="pb-3 font-medium text-dark-300">Mode</th>
                 <th className="pb-3 font-medium text-dark-300">Dataset</th>
-                <th className="pb-3 font-medium text-dark-300">Prediction</th>
-                <th className="pb-3 font-medium text-dark-300">Probability</th>
+                <th className="pb-3 font-medium text-dark-300">Predicted Category</th>
+                <th className="pb-3 font-medium text-dark-300">Severity</th>
+                <th className="pb-3 font-medium text-dark-300">Risk Score</th>
                 <th className="pb-3 font-medium text-dark-300">Confidence</th>
-                <th className="pb-3 font-medium text-dark-300">True Label</th>
                 <th className="pb-3 font-medium text-dark-300 w-12">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-dark-800">
               {isLoading ? (
                 <tr>
-                  <td className="py-4 text-dark-400 text-center" colSpan={10}>
+                  <td className="py-4 text-dark-400 text-center" colSpan={12}>
                     <div className="flex items-center justify-center gap-2">
                       <RefreshCw className="w-5 h-5 animate-spin" />
                       Loading detections...
@@ -510,42 +557,47 @@ export function Detections() {
                     <td className="py-3 text-dark-400 text-sm font-mono">
                       {detection.timestamp ? format(parseISO(detection.timestamp), 'MMM d, HH:mm:ss') : '-'}
                     </td>
-                    <td className="py-3 text-dark-50 truncate max-w-[150px]" title={detection.job_name}>
+                    <td className="py-3 text-cyan-300 text-xs truncate max-w-[130px]" title={detection.organisation_name || 'Cyber Defense Consortium'}>
+                      <div className="flex items-center gap-1.5">
+                        <Building2 className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                        <span className="truncate">{detection.organisation_name || 'Cyber Defense Consortium'}</span>
+                      </div>
+                    </td>
+                    <td className="py-3 text-dark-50 truncate max-w-[140px]" title={detection.job_name}>
                       {detection.job_name}
                     </td>
-                    <td className="py-3 text-dark-400 font-mono text-sm truncate max-w-[120px]" title={detection.model_name || ''}>
-                      {detection.model_name ? `${detection.model_name} (${detection.model_version})` : 'Unknown'}
+                    <td className="py-3 text-emerald-300 font-mono text-xs truncate max-w-[170px]" title={detection.model_name || 'Unknown'}>
+                      {detection.model_name || 'Unknown'}
                     </td>
-                    <td className="py-3 text-dark-400 font-mono text-sm truncate max-w-[120px]" title={detection.dataset_name || ''}>
+                    <td className="py-3 text-primary-400 font-mono text-xs uppercase">
+                      {detection.detection_mode || 'supervised'}
+                    </td>
+                    <td className="py-3 text-dark-400 font-mono text-xs truncate max-w-[120px]" title={detection.dataset_name || ''}>
                       {detection.dataset_name || 'Unknown'}
                     </td>
                     <td className="py-3">
                       <span className={clsx('px-2 py-1 text-xs rounded-full font-medium', getPredictionColor(detection.prediction))}>
-                        {getPredictionLabel(detection.prediction)}
+                        {detection.predicted_category || getPredictionLabel(detection.prediction)}
+                      </span>
+                    </td>
+                    <td className="py-3">
+                      <span className="px-2 py-0.5 text-[11px] rounded font-mono uppercase bg-dark-800 text-dark-200 border border-dark-700">
+                        {detection.severity || 'info'}
                       </span>
                     </td>
                     <td className="py-3 text-dark-300 font-mono">
-                      {detection.probability.toFixed(4)}
-                      <div className="w-24 h-1.5 bg-dark-700 rounded-full mt-1 overflow-hidden">
+                      {(detection.risk_score ?? detection.probability).toFixed(4)}
+                      <div className="w-20 h-1.5 bg-dark-700 rounded-full mt-1 overflow-hidden">
                         <div
                           className={clsx('h-full rounded-full transition-all',
                             detection.prediction === 1 ? 'bg-red-500' : 'bg-green-500'
                           )}
-                          style={{ width: `${(detection.probability * 100).toFixed(1)}%` }}
+                          style={{ width: `${((detection.risk_score ?? detection.probability) * 100).toFixed(1)}%` }}
                         />
                       </div>
                     </td>
                     <td className="py-3 text-dark-300 font-mono">
                       {detection.confidence !== null ? detection.confidence.toFixed(4) : 'N/A'}
-                    </td>
-                    <td className="py-3">
-                      {detection.true_label !== null ? (
-                        <span className={clsx('px-2 py-0.5 text-xs rounded-full font-medium', getPredictionColor(detection.true_label))}>
-                          {getPredictionLabel(detection.true_label)}
-                        </span>
-                      ) : (
-                        <span className="text-dark-500 text-xs">N/A</span>
-                      )}
                     </td>
                     <td className="py-3 text-center">
                       <button
@@ -646,10 +698,12 @@ export function Detections() {
                         </div>
                         <div>
                           <h3 className="text-lg font-semibold text-dark-50">
-                            {getPredictionLabel(selectedDetection.prediction)} Traffic Detected
+                            {selectedDetection.predicted_category || `${getPredictionLabel(selectedDetection.prediction)} Traffic Detected`}
                           </h3>
                           <p className="text-sm text-dark-400">
-                            Probability: {(selectedDetection.probability * 100).toFixed(1)}% • Confidence: {selectedDetection.confidence !== null ? (selectedDetection.confidence * 100).toFixed(1) + '%' : 'N/A'}
+                            Risk Score: {((selectedDetection.risk_score ?? selectedDetection.probability) * 100).toFixed(1)}% •
+                            Severity: {(selectedDetection.severity || 'informational').toUpperCase()} •
+                            Mode: {(selectedDetection.detection_mode || 'supervised').toUpperCase()}
                           </p>
                         </div>
                       </div>
@@ -663,6 +717,39 @@ export function Detections() {
                       )}
                     </div>
                   </div>
+
+                  {/* Explanation & Triggered Rules */}
+                  {selectedDetection.explanation && (
+                    <div className="p-4 bg-dark-800/50 border border-dark-700 rounded-lg space-y-2">
+                      <h4 className="text-sm font-semibold text-dark-50">Adaptive Detection Explanation</h4>
+                      <p className="text-xs text-dark-300 leading-relaxed">{selectedDetection.explanation}</p>
+                      <div className="grid grid-cols-3 gap-2 pt-2 text-xs font-mono">
+                        <div className="p-2 bg-dark-900 rounded">
+                          <span className="text-dark-400 block">Supervised Prob</span>
+                          <span className="text-primary-400">{selectedDetection.supervised_probability !== null && selectedDetection.supervised_probability !== undefined ? selectedDetection.supervised_probability.toFixed(4) : 'N/A'}</span>
+                        </div>
+                        <div className="p-2 bg-dark-900 rounded">
+                          <span className="text-dark-400 block">Anomaly Score</span>
+                          <span className="text-yellow-400">{selectedDetection.anomaly_score !== null && selectedDetection.anomaly_score !== undefined ? selectedDetection.anomaly_score.toFixed(4) : 'N/A'}</span>
+                        </div>
+                        <div className="p-2 bg-dark-900 rounded">
+                          <span className="text-dark-400 block">Rule Score</span>
+                          <span className="text-blue-400">{(selectedDetection.rule_score ?? 0).toFixed(4)}</span>
+                        </div>
+                      </div>
+                      {selectedDetection.triggered_rules && selectedDetection.triggered_rules.length > 0 && (
+                        <div className="pt-2 space-y-1">
+                          <p className="text-xs font-semibold text-orange-400">Triggered Network Heuristic Rules:</p>
+                          {selectedDetection.triggered_rules.map((r, idx) => (
+                            <div key={idx} className="text-xs font-mono text-dark-300 bg-dark-900 p-1.5 rounded flex justify-between">
+                              <span>{r.name}</span>
+                              <span className="text-dark-400">{r.evidence}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Metadata */}
                   <div className="p-4 bg-dark-800/50 border border-dark-700 rounded-lg">
@@ -686,6 +773,13 @@ export function Detections() {
                       <div>
                         <p className="text-dark-400">Model Version</p>
                         <p className="text-dark-300 font-mono text-xs">{selectedDetection.model_version || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-dark-400">Organisation</p>
+                        <p className="text-cyan-300 font-medium truncate flex items-center gap-1.5">
+                          <Building2 className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                          {selectedDetection.organisation_name || 'Cyber Defense Consortium'}
+                        </p>
                       </div>
                       <div>
                         <p className="text-dark-400">Dataset</p>

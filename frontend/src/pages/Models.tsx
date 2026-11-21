@@ -30,6 +30,7 @@ const ALGORITHMS: AlgorithmOption[] = [
   { value: 'fedprox', label: 'FedProx' },
   { value: 'dp_fedavg', label: 'DP-FedAvg' },
   { value: 'dp_fedprox', label: 'DP-FedProx' },
+  { value: 'centralized', label: 'Centralized' },
 ]
 
 export function Models() {

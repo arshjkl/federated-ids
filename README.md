@@ -1,19 +1,23 @@
-# Federated Learning IDS
+# Federated Learning IDS — Universal Network Dataset Intelligence & Adaptive Intrusion Detection System
 
-Privacy-Preserving Federated Intrusion Detection System (IDS) built on the CIC-IDS2017 dataset.
+Privacy-Preserving Federated Intrusion Detection System (IDS) combining high-accuracy supervised CIC-IDS2017 models (`MLPIDS` & `ImprovedMLPIDS`, centralized, FedAvg, FedProx, and DP-FedAvg) with a **Universal Network Dataset Intelligence and Adaptive Intrusion Detection Engine** capable of ingesting, profiling, semantically mapping, deriving, and scoring diverse network traffic datasets (`CIC-IDS2017`, `CIC-IDS2018/2019`, `UNSW-NB15`, `NSL-KDD`, `TON_IoT`, `Edge-IIoTset`, and custom flow tables).
 
 ## Overview
 
-This project implements an end-to-end privacy-preserving federated intrusion detection pipeline. It detects malicious network traffic (binary classification: BENIGN vs ATTACK) using:
+This project implements an end-to-end privacy-preserving federated intrusion detection and universal adaptive inference pipeline:
 
 - **Centralized MLP baseline** — single-node training on the full training set (97.71% accuracy)
-- **Centralized MLP (improved)** — ImprovedMLPIDS with weighted BCE / focal loss, LR scheduling, early stopping, threshold optimization
-- **Manual FedAvg** — 50 rounds, 5 clients, Dirichlet α=0.5 non-IID partitioning, warm-started from the centralized checkpoint (95.87% accuracy)
-- **Improved FedAvg** — FedAvg with ImprovedMLPIDS, weighted BCE, per-client LR scheduling, threshold optimization
-- **FedProx** — FedAvg with proximal term (mu) to reduce client drift
-- **DP-FedAvg** — differentially-private federated averaging with DP-SGD via Opacus 1.6.0 (per-example gradient clipping + Gaussian noise, moments-accountant privacy accounting, epsilon=0.1457 at delta=1e-05)
-- **Improved DP-FedAvg** — DP-FedAvg with correct batch-level privacy accounting, ImprovedMLPIDS, weighted BCE, threshold optimization
-- **DP-FedProx** — DP-FedAvg with proximal term (mu) + DP-SGD
+- **Centralized MLP (improved)** — `ImprovedMLPIDS` with residual connections, LayerNorm, FocalLoss, and threshold optimization (99.72% accuracy)
+- **Manual FedAvg** — 50 rounds, 5 clients, Dirichlet $\alpha=0.5$ non-IID partitioning, warm-started from the centralized checkpoint (95.87% accuracy)
+- **Improved FedAvg (Federated v2)** — FedAvg with `ImprovedMLPIDS`, weighted BCE, per-client LR scheduling, and threshold optimization (99.44% accuracy)
+- **FedProx** — FedAvg with proximal term ($\mu$) to reduce client drift
+- **DP-FedAvg** — differentially-private federated averaging with DP-SGD via Opacus 1.6.0 (per-example gradient clipping + Gaussian noise, moments-accountant privacy accounting, $\varepsilon=0.1457$ at $\delta=10^{-5}$)
+- **Universal Dataset Intelligence & 18-Stage Adaptive Inference Engine (`src/inference/`)**:
+  - **Multi-Format Ingestion (`UniversalIngestionEngine`)**: CSV, TSV, JSON, JSONL/NDJSON, and Parquet with automatic delimiter/encoding detection and malformed line recovery.
+  - **Dataset Profiling & Schema Family Detection (`DatasetProfiler`)**: Computes a 0–100 Data Quality Score, feature distributions, 3-IQR outlier telemetry, and identifies dataset families (`CIC-IDS2017`, `CIC-IDS2018/2019`, `UNSW-NB15`, `NSL-KDD`, `TON_IoT`, `Edge-IIoTset`, or custom flow logs).
+  - **Semantic Feature Mapping (`SemanticFeatureMapper`)**: Maps arbitrary column names to 77 canonical network features across 8 groups with exact, alias, normalized, and token-similarity matching, automatic unit conversion (`seconds_to_microseconds`), statistical plausibility validation, and user manual overrides.
+  - **Safe Mathematical Feature Derivation (`FeatureDerivationEngine`)**: Safely derives 20 mathematical network flow properties (including `Min Packet Length`, `Max Packet Length`, packet rates, byte rates, directional means, and subflow aggregates) with explicit provenance tracking (`original`, `derived`, `approximated`, `unavailable`) without fabricating non-derivable measurements (`Init_Win_bytes_forward`, `Init_Win_bytes_backward`, TCP flags, IATs).
+  - **Adaptive Model Routing (`ModelCompatibilityRouter` & `AdaptiveHybridScorer`)**: Routes datasets across 4 transparent detection modes (`Mode 1: Supervised CICIDS2017_SUPERVISED_MODEL`, `Mode 2: Adaptive Hybrid Ensemble`, `Mode 3: Unsupervised Anomaly + Rule Engine`, `Mode 4: Network Intrusion Rule Engine`).
 
 ## Key Results
 
@@ -33,7 +37,7 @@ This project implements an end-to-end privacy-preserving federated intrusion det
 | Manual FedAvg | 409,343 | 9,954 | 10,891 | 74,285 |
 | DP-FedAvg | 389,079 | 30,218 | 445 | 84,731 |
 
-### Improved Variants (ImprovedMLPIDS: 256→128→64→32, residual, LayerNorm, FocalLoss, threshold optimization)
+### Improved Variants (`ImprovedMLPIDS`: 256→128→64→32, residual, LayerNorm, FocalLoss, threshold optimization)
 
 | Model | Accuracy | Precision | Recall | F1 | ROC-AUC | FPR | FNR | Optimal Threshold |
 |---|---|---|---|---|---|---|---|---|
@@ -46,10 +50,19 @@ Baseline results in `models/centralized_mlp_results.json`, `models/manual_federa
 
 ```
 federated-ids/
-├── PROJECT_SYNOPSIS.md   # Project overview and key results
-├── README.md             # This file
-├── requirements.txt      # Python dependencies
-├── docs/                 # Detailed documentation
+├── PROJECT_SYNOPSIS.md
+├── README.md
+├── requirements.txt
+├── start_backend.sh                  # Launches FastAPI backend on port 18003
+├── start_frontend.sh                 # Launches React/Vite frontend on port 3000+
+├── docs/                             # Comprehensive technical documentation
+│   ├── UNIVERSAL_DATASET_AUDIT.md
+│   ├── UNIVERSAL_DATASET_ARCHITECTURE.md
+│   ├── FEATURE_MAPPING_REFERENCE.md
+│   ├── MODEL_ROUTING.md
+│   ├── INFERENCE_PIPELINE.md
+│   ├── DATASET_COMPATIBILITY.md
+│   ├── TESTING_REPORT.md
 │   ├── ARCHITECTURE.md
 │   ├── DATASET.md
 │   ├── PREPROCESSING.md
@@ -58,140 +71,113 @@ federated-ids/
 │   ├── DIFFERENTIAL_PRIVACY.md
 │   ├── EVALUATION.md
 │   └── REPRODUCIBILITY.md
-├── data/                 # Dataset (raw + processed — generated, not version controlled)
-├── models/               # Trained checkpoints and results JSON
-├── reports/              # Validation, audit, status, and experiment reports
+├── data/                             # Dataset samples and processed artifacts
+├── models/                           # Trained checkpoints and results JSON
+├── reports/                          # Validation, audit, status, and experiment reports
+├── frontend/                         # React + TypeScript + Vite dashboard
+│   └── src/
+│       ├── pages/Inference.tsx       # 18-stage Universal Dataset Intelligence UI
+│       ├── pages/Detections.tsx      # Multi-mode Detection Explorer & Rule Inspector
+│       └── services/api.ts           # Typed API client
 ├── src/
-│   ├── data/preprocessing_validation.py
-│   ├── models/mlp.py                 # MLPIDS + ImprovedMLPIDS, FocalLoss
-│   ├── models/train_centralized.py   # Centralized training (20 epochs baseline + improved)
+│   ├── data/preprocessing.py         # CIC-IDS2017 training preprocessing pipeline
+│   ├── models/
+│   │   ├── mlp.py                    # MLPIDS
+│   │   └── improved_mlp.py           # ImprovedMLPIDS & FocalLoss
+│   ├── inference/                    # Universal Dataset Intelligence & Adaptive Inference
+│   │   ├── canonical_schema.py       # 77 canonical features across 8 network groups
+│   │   ├── ingestion.py              # Multi-format UniversalIngestionEngine
+│   │   ├── profiler.py               # DatasetProfiler & schema family detection
+│   │   ├── feature_mapper.py         # SemanticFeatureMapper & unit conversion
+│   │   ├── feature_derivation.py     # Safe mathematical FeatureDerivationEngine
+│   │   ├── model_router.py           # ModelCompatibilityRouter (4 detection modes)
+│   │   ├── detectors.py              # Supervised, IsolationForest+ZScore, 8-Rule Engine, Hybrid Scorer
+│   │   └── pipeline.py               # 18-stage traceable AdaptiveInferencePipeline
 │   ├── federated/
-│   │   ├── run_manual_federated.py   # Manual FedAvg (50 rounds) + improved + FedProx
-│   │   ├── run_dp_federated.py       # DP-FedAvg (30 rounds) + improved + DP-FedProx
-│   │   └── run_comparison.py         # All-variants comparison runner
-│   ├── privacy/dp_sgd.py             # DP-SGD trainer + privacy accounting (+ batches_per_epoch)
-│   └── utils/explore_dataset.py
-├── tests/
-│   ├── test_mlp.py
-│   ├── test_federated.py
-│   ├── test_dp.py
-│   ├── test_improved.py              # Improved MLP, losses, FedProx, threshold, privacy
-│   └── test_preprocessing.py
-├── validate_centralized.py # Centralized validation script
-└── .venv/                # Python env (torch 2.14.0, opacus 1.6.0)
+│   │   ├── run_manual_federated.py   # Manual FedAvg (50 rounds)
+│   │   ├── run_dp_federated.py       # DP-FedAvg (30 rounds)
+│   │   └── schema_validator.py       # FederatedCompatibilityValidator for heterogeneous clients
+│   ├── dashboard/
+│   │   ├── main.py                   # FastAPI application & Universal Intelligence endpoints
+│   │   ├── schemas/__init__.py       # Pydantic schemas
+│   │   └── services/
+│   │       ├── model_loader.py       # PyTorch checkpoint loader (MLPIDS & ImprovedMLPIDS)
+│   │       └── inference_runner.py   # Background inference orchestrator & artifact storage
+│   └── privacy/dp_sgd.py             # DP-SGD trainer + privacy accounting
+└── tests/
+    ├── test_mlp.py
+    ├── test_federated.py
+    ├── test_dp.py
+    └── test_universal_pipeline.py    # 14 test suites covering all 16 Universal IDS phases
 ```
 
-## Requirements
+## Quick Start — Running the Full-Stack Dashboard & Backend
 
-Install dependencies (network is blocked for PyPI — packages must already be present in `.venv`):
+### 1. Start the FastAPI Backend (`http://localhost:18003`)
 
 ```bash
-pip install -r requirements.txt
+./start_backend.sh
 ```
 
-Or create the virtual environment:
+### 2. Start the React + Vite Frontend (`http://localhost:3000`)
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate  # Linux/macOS
-# or .venv\Scripts\activate  # Windows
-pip install -r requirements.txt
+./start_frontend.sh
 ```
 
-## Run the Pipeline (Full Commands)
+The frontend proxies `/api`, `/health`, and `/ws` directly to the FastAPI backend (`http://localhost:18003`), avoiding cross-origin issues regardless of which local port Vite selects.
 
-### 1. Preprocess the CIC-IDS2017 Dataset
+## Run the ML Training & Validation Pipeline
+
+### 1. Validate Centralized & Improved Checkpoints
 
 ```bash
-PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python src/data/preprocessing_validation.py
+PYTHONPATH=. .venv/bin/python validate_centralized.py
 ```
-
-This loads the raw CSVs, cleans labels, converts to binary (BENIGN=0, ATTACK=1), applies stratified train/test split, fits `StandardScaler` on training data only, and saves processed arrays + scaler to `data/processed/`.
 
 ### 2. Train Centralized MLP Baseline
 
 ```bash
-PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python src/models/train_centralized.py
+PYTHONPATH=. .venv/bin/python src/models/train_centralized.py
 ```
 
-Trains for 20 epochs, saves `models/centralized_mlp.pth` and `models/centralized_mlp_results.json`.
-
-### 3. Run Centralized Validation
+### 3. Run Manual FedAvg (50 Rounds)
 
 ```bash
-PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python validate_centralized.py
+PYTHONPATH=. .venv/bin/python src/federated/run_manual_federated.py
 ```
 
-### 4. Run Manual FedAvg (50 Rounds)
+### 4. Run DP-FedAvg (30 Rounds)
 
 ```bash
-PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python src/federated/run_manual_federated.py
+PYTHONPATH=. .venv/bin/python src/federated/run_dp_federated.py
 ```
-
-Trains 50 rounds with 5 clients, warm-started from the centralized checkpoint. Saves `models/federated_mlp_manual.pth`, `models/manual_federated_improved_results.json`, and per-round checkpoints.
-
-### 5. Run DP-FedAvg (30 Rounds)
-
-```bash
-PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python src/federated/run_dp_federated.py
-```
-
-Trains 30 rounds with DP-SGD (noise_multiplier=1.0, max_grad_norm=1.0, delta=1e-05). Saves `models/federated_mlp_dp.pth`, `models/dp_federated_results.json`, and `reports/privacy_report.json`.
-
-### 6. Run Improved Variants (All Models)
-
-```bash
-PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python src/federated/run_comparison.py
-```
-
-Runs Centralized (baseline + improved), FedAvg (baseline + improved), FedProx, DP-FedAvg (baseline + improved), DP-FedProx under identical data/seed conditions. Writes `models/model_comparison_improved.json` and prints a side-by-side table.
-
-### 7. Run Individual Improved Variants
-
-Centralized improved:
-```bash
-PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python -c "from src.models.train_centralized import train_centralized_improved; train_centralized_improved()"
-```
-
-Improved FedAvg / FedProx:
-```bash
-PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python -c "from src.federated.run_manual_federated import run_manual_federated_improved, run_manual_federated_prox; run_manual_federated_improved(); run_manual_federated_prox()"
-```
-
-Improved DP-FedAvg / DP-FedProx:
-```bash
-PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python -c "from src.federated.run_dp_federated import run_dp_federated_improved, run_dp_federated_prox; run_dp_fedrated_improved(); run_dp_federated_prox()"
-```
-
-### Expected Order
-
-Run steps 1 → 2 → 4 → 5 in order (step 3 is optional validation). Steps 4, 5, and 6 all warm-start from the centralized checkpoint produced in step 2. Step 6 runs all improved variants in one go.
 
 ## Tests
 
-Run the full suite with the project's unittest runner (pytest unavailable — network blocked for PyPI):
+Run all 50 unit and integration tests across the repository:
 
 ```bash
-PYTHONPATH=/Users/admin/Desktop/federated-ids .venv/bin/python -m unittest discover -s tests
+PYTHONPATH=. .venv/bin/python -m unittest discover -s tests -v
 ```
-
-All tests pass (66 tests across 6 files; documented in `reports/test_results.md`).
 
 ## Documentation
 
-See `docs/` for per-component details:
+See `docs/` for detailed technical documentation:
 
-- `ARCHITECTURE.md` — system architecture
-- `DATASET.md` — CIC-IDS2017 dataset
-- `PREPROCESSING.md` — preprocessing pipeline
-- `CENTRALIZED_TRAINING.md` — centralized MLP training
-- `FEDERATED_LEARNING.md` — manual FedAvg
-- `DIFFERENTIAL_PRIVACY.md` — DP-SGD / DP-FedAvg
-- `EVALUATION.md` — evaluation methodology and results
-- `REPRODUCIBILITY.md` — how to reproduce results
-
-## Notes
-
-- All model files are under GitHub's 100MB per-file limit.
-- Network is blocked for PyPI in this environment — dependencies must be pre-installed in `.venv`.
-- Dashboard runs on ports 3000 (frontend) and 18003 (backend).
+- `docs/DASHBOARD_INTERFACE.md` — complete guide to the React + FastAPI Dashboard UI, 6-step Inference Wizard, Model Selector, and Detections Explorer
+- `docs/UNIVERSAL_DATASET_AUDIT.md` — Phase 1 audit of repository, models, and legacy assumptions
+- `docs/UNIVERSAL_DATASET_ARCHITECTURE.md` — System architecture of the Universal Dataset Intelligence Engine
+- `docs/FEATURE_MAPPING_REFERENCE.md` — 77-feature canonical schema, alias mapping rules, and mathematical derivations
+- `docs/MODEL_ROUTING.md` — 4-mode routing decision matrix, neutral mean baseline strategy, and severity tiers
+- `docs/INFERENCE_PIPELINE.md` — Complete 18-stage traceable pipeline specification
+- `docs/DATASET_COMPATIBILITY.md` — Supported file formats, dataset families, and federated schema compatibility
+- `docs/TESTING_REPORT.md` — 50-test verification report, 10-scenario evaluation matrix, and 100k-row scaling benchmarks
+- `docs/ARCHITECTURE.md` — Base federated system architecture
+- `docs/DATASET.md` — CIC-IDS2017 dataset details
+- `docs/PREPROCESSING.md` — Training preprocessing pipeline
+- `docs/CENTRALIZED_TRAINING.md` — Centralized MLP training
+- `docs/FEDERATED_LEARNING.md` — Manual FedAvg & FedProx
+- `docs/DIFFERENTIAL_PRIVACY.md` — DP-SGD / DP-FedAvg
+- `docs/EVALUATION.md` — Evaluation methodology and results
+- `docs/REPRODUCIBILITY.md` — How to reproduce results

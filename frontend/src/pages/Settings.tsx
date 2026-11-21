@@ -49,7 +49,7 @@ export function Settings() {
               <label className="block text-sm text-dark-400 mb-1">Backend URL</label>
               <input
                 type="text"
-                value="http://localhost:8000"
+                value="http://localhost:18003"
                 className="w-full px-4 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-50 placeholder-dark-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                 readOnly
               />
@@ -58,7 +58,7 @@ export function Settings() {
               <label className="block text-sm text-dark-400 mb-1">WebSocket URL</label>
               <input
                 type="text"
-                value="ws://localhost:8000"
+                value={(import.meta as unknown as { env: { VITE_WS_URL?: string } }).env.VITE_WS_URL || 'ws://localhost:18003'}
                 className="w-full px-4 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-50 placeholder-dark-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                 readOnly
               />
@@ -71,7 +71,7 @@ export function Settings() {
             <Database className="w-5 h-5" />
             Database
           </h3>
-          <p className="text-dark-400">PostgreSQL: postgresql+asyncpg://postgres:postgres@localhost:5432/federated_ids</p>
+          <p className="text-dark-400">SQLite: sqlite+aiosqlite:///federated_ids.db</p>
         </section>
 
         <section className="border-t border-dark-700 pt-6">

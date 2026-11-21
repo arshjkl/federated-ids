@@ -1,10 +1,11 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { Shield, Network, Brain, BarChart3, Settings as SettingsIcon, AlertTriangle } from 'lucide-react'
+import { Shield, Network, BarChart3, AlertTriangle, Settings as SettingsIcon, Cpu, Brain } from 'lucide-react'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
 import { Dashboard } from '@/pages/Dashboard'
 import { Organisations } from '@/pages/Organisations'
 import { Experiments } from '@/pages/Experiments'
+import { Models } from '@/pages/Models'
 import { Inference } from '@/pages/Inference'
 import { Detections } from '@/pages/Detections'
 import { Privacy } from '@/pages/Privacy'
@@ -27,9 +28,10 @@ const navigation = [
   { name: 'Dashboard', href: '/', icon: BarChart3 },
   { name: 'Organisations', href: '/organisations', icon: Network },
   { name: 'Experiments', href: '/experiments', icon: Brain },
+  { name: 'Models', href: '/models', icon: Cpu },
   { name: 'Inference', href: '/inference', icon: Shield },
   { name: 'Detections', href: '/detections', icon: AlertTriangle },
-  { name: 'Privacy Analytics', href: '/privacy', icon: SettingsIcon },
+  { name: 'Settings', href: '/settings', icon: SettingsIcon },
 ]
 
 function AppLayout() {
@@ -43,6 +45,7 @@ function AppLayout() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/organisations" element={<Organisations />} />
             <Route path="/experiments" element={<Experiments />} />
+            <Route path="/models" element={<Models />} />
             <Route path="/inference" element={<Inference />} />
             <Route path="/detections" element={<Detections />} />
             <Route path="/privacy" element={<Privacy />} />

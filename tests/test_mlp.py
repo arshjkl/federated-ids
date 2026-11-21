@@ -16,7 +16,7 @@ import torch
 
 from src.models.mlp import MLPIDS, count_parameters, create_mlp_model
 
-PROJECT_ROOT = "/Users/admin/Desktop/federated-ids"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROCESSED_DIR = os.path.join(PROJECT_ROOT, "data", "processed")
 MODELS_DIR = os.path.join(PROJECT_ROOT, "models")
 

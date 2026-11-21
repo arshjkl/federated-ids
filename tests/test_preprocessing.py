@@ -19,7 +19,7 @@ from src.data.preprocessing_validation import (
     validate_dataset_integrity,
 )
 
-PROJECT_ROOT = "/Users/admin/Desktop/federated-ids"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(PROJECT_ROOT, "data", "raw", "MachineLearningCVE")
 PROCESSED_DIR = os.path.join(PROJECT_ROOT, "data", "processed")
 
