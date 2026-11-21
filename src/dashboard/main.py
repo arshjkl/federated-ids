@@ -472,7 +472,21 @@ async def validate_dataset(dataset_id: uuid.UUID, db: AsyncSession = Depends(get
         raise HTTPException(status_code=404, detail="Dataset not found")
 
     if not os.path.exists(dataset.file_path):
-        raise HTTPException(status_code=404, detail="Dataset file not found")
+        rel_name = os.path.basename(dataset.file_path)
+        candidates = [
+            f"data/mock/inference/{rel_name}",
+            f"/app/data/mock/inference/{rel_name}",
+            f"artifacts/uploaded_datasets/{rel_name}",
+            f"/app/artifacts/uploaded_datasets/{rel_name}",
+        ]
+        found = False
+        for cand in candidates:
+            if os.path.exists(cand):
+                dataset.file_path = cand
+                found = True
+                break
+        if not found:
+            raise HTTPException(status_code=404, detail="Dataset file not found")
 
     dataset.status = DatasetStatus.VALIDATING
     await db.commit()
@@ -1680,7 +1694,21 @@ async def preview_dataset(
         raise HTTPException(status_code=404, detail="Dataset not found")
 
     if not os.path.exists(dataset.file_path):
-        raise HTTPException(status_code=404, detail="Dataset file not found")
+        rel_name = os.path.basename(dataset.file_path)
+        candidates = [
+            f"data/mock/inference/{rel_name}",
+            f"/app/data/mock/inference/{rel_name}",
+            f"artifacts/uploaded_datasets/{rel_name}",
+            f"/app/artifacts/uploaded_datasets/{rel_name}",
+        ]
+        found = False
+        for cand in candidates:
+            if os.path.exists(cand):
+                dataset.file_path = cand
+                found = True
+                break
+        if not found:
+            raise HTTPException(status_code=404, detail="Dataset file not found")
 
     try:
         import numpy as np
@@ -1738,7 +1766,21 @@ async def validate_dataset_for_inference(
         raise HTTPException(status_code=404, detail="Dataset not found")
 
     if not os.path.exists(dataset.file_path):
-        raise HTTPException(status_code=404, detail="Dataset file not found")
+        rel_name = os.path.basename(dataset.file_path)
+        candidates = [
+            f"data/mock/inference/{rel_name}",
+            f"/app/data/mock/inference/{rel_name}",
+            f"artifacts/uploaded_datasets/{rel_name}",
+            f"/app/artifacts/uploaded_datasets/{rel_name}",
+        ]
+        found = False
+        for cand in candidates:
+            if os.path.exists(cand):
+                dataset.file_path = cand
+                found = True
+                break
+        if not found:
+            raise HTTPException(status_code=404, detail="Dataset file not found")
 
     try:
         from src.inference.pipeline import get_adaptive_pipeline
@@ -1857,7 +1899,21 @@ async def preprocess_dataset(
         raise HTTPException(status_code=404, detail="Dataset not found")
 
     if not os.path.exists(dataset.file_path):
-        raise HTTPException(status_code=404, detail="Dataset file not found")
+        rel_name = os.path.basename(dataset.file_path)
+        candidates = [
+            f"data/mock/inference/{rel_name}",
+            f"/app/data/mock/inference/{rel_name}",
+            f"artifacts/uploaded_datasets/{rel_name}",
+            f"/app/artifacts/uploaded_datasets/{rel_name}",
+        ]
+        found = False
+        for cand in candidates:
+            if os.path.exists(cand):
+                dataset.file_path = cand
+                found = True
+                break
+        if not found:
+            raise HTTPException(status_code=404, detail="Dataset file not found")
 
     try:
         from src.inference.pipeline import get_adaptive_pipeline

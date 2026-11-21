@@ -15,7 +15,11 @@ backups/
 
 # Large data — regenerate with src/data/preprocessing_validation.py
 data/raw/
-data/processed/
+data/processed/*
+!data/processed/scaler.pkl
+!data/processed/feature_names.json
+!data/processed/label_mapping.json
+!data/processed/constant_features.json
 
 # Excluded from push per scope
 /dashboard/
